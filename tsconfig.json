@@ -3,6 +3,8 @@
     "target": "es5",
     "module": "commonjs",
     "moduleResolution": "node",
+    "esModuleInterop": true,
+    "lib": ["es2015", "dom", "esnext.asynciterable"],
     "declaration": true,
     "experimentalDecorators": true,
     "outDir": "dist",

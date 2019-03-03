@@ -1,19 +1,20 @@
 {
-  "name": "react-apollo-mock",
-  "version": "0.0.0",
-  "description": "Library to help unit testing when using react-apollo",
-  "main": "‘dist/index.js",
-  "types" : "dist/index.d.ts",
+  "name": "mock-apollo-client",
+  "version": "0.0.1",
+  "description": "Library to help unit testing when using apollo-client",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rm -rf ./dist && tsc",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "npm run build && npm publish"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mike-gibson/react-apollo-mock.git"
+    "url": "git+https://github.com/mike-gibson/mock-apollo-client.git"
   },
   "keywords": [
-    "react-apollo",
+    "apollo-client",
     "graphql",
     "mock",
     "test",
@@ -22,13 +23,21 @@
   "author": "mike-gibson",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mike-gibson/react-apollo-mock/issues"
+    "url": "https://github.com/mike-gibson/mock-apollo-client/issues"
   },
-  "homepage": "https://github.com/mike-gibson/react-apollo-mock#readme",
+  "homepage": "https://github.com/mike-gibson/mock-apollo-client#readme",
   "dependencies": {},
   "devDependencies": {
+    "@types/graphql": "^14.0.7",
     "@types/jest": "^24.0.9",
+    "apollo-cache-inmemory": "^1.5.1",
+    "apollo-client": "^2.5.1",
+    "graphql": "^14.1.1",
     "jest": "^24.1.0",
     "typescript": "^3.3.3333"
+  },
+  "peerDependencies": {
+    "apollo-client": "~2.5.0",
+    "graphql": "~14.1.0"
   }
 }
