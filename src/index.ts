@@ -1,2 +1,1 @@
-export { createMockClient, MockApolloClient } from './mockClient';
-export { IRequestHandler } from './requestHandler';
+export { createMockClient, MockApolloClient, RequestHandler } from './mockClient';

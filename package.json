@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "rm -rf ./dist && tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "deploy": "npm run build && npm publish"
   },
   "repository": {
@@ -33,11 +34,15 @@
     "apollo-cache-inmemory": "^1.5.1",
     "apollo-client": "^2.5.1",
     "graphql": "^14.1.1",
-    "jest": "^24.1.0",
-    "typescript": "^3.3.3333"
+    "graphql-tag": "^2.10.1",
+    "jest": "^24.7.1",
+    "ts-jest": "^24.0.2",
+    "typescript": "^3.4.3"
   },
   "peerDependencies": {
-    "apollo-client": "~2.5.0",
-    "graphql": "~14.1.0"
-  }
+    "apollo-client": "~2.5.0"
+  },
+  "files": [
+    "./dist/**/*"
+  ]
 }

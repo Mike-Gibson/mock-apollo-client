@@ -2,10 +2,14 @@ import ApolloClient from 'apollo-client';
 import { InMemoryCache as Cache, NormalizedCacheObject } from 'apollo-cache-inmemory';
 import { DocumentNode } from 'apollo-link';
 import { MockLink } from './mockLink';
-import { IRequestHandler } from './requestHandler';
+
+export type RequestHandler<TData = any, TVariables = any> =
+  (variables: TVariables) => Promise<RequestHandlerResponse<TData>>;
+
+export type RequestHandlerResponse<T> = { data: T, errors?: any[] };
 
 export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
-  { getRequestHandler: <TData = any, TVariables = any>(requestQuery: DocumentNode) => IRequestHandler<TData, TVariables> };
+  { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };
 
 export const createMockClient = (): MockApolloClient => {
   const mockLink = new MockLink();
@@ -18,7 +22,7 @@ export const createMockClient = (): MockApolloClient => {
   });
 
   const mockMethods = {
-    getRequestHandler: (requestQuery: DocumentNode) => mockLink.getRequestHandler(requestQuery),
+    setRequestHandler: mockLink.setRequestHandler.bind(mockLink),
   };
 
   return Object.assign(client, mockMethods);
