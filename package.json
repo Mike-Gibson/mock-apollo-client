@@ -40,7 +40,7 @@
     "typescript": "^3.4.3"
   },
   "peerDependencies": {
-    "apollo-client": "~2.5.0"
+    "apollo-client": "~2.5.0 || ~2.6.0"
   },
   "files": [
     "dist/**/*"
