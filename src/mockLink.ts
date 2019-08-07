@@ -1,4 +1,4 @@
-import { ApolloLink, DocumentNode, Observable, Operation } from 'apollo-link';
+import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
 import { removeClientSetsFromDocument } from 'apollo-utilities';
 import { print } from 'graphql/language/printer';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
@@ -37,7 +37,7 @@ export class MockLink extends ApolloLink {
       throw new Error(`Request handler must return a promise. Received '${typeof resultPromise}'.`);
     }
 
-    return new Observable(observer => {
+    return new Observable<FetchResult>(observer => {
       resultPromise!
         .then((result) => {
           observer.next(result);

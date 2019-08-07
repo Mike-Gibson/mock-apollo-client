@@ -29,15 +29,15 @@
   "homepage": "https://github.com/mike-gibson/mock-apollo-client#readme",
   "dependencies": {},
   "devDependencies": {
-    "@types/graphql": "^14.0.7",
-    "@types/jest": "^24.0.9",
-    "apollo-cache-inmemory": "^1.5.1",
-    "apollo-client": "^2.5.1",
-    "graphql": "^14.1.1",
+    "@types/graphql": "^14.2.3",
+    "@types/jest": "^24.0.17",
+    "apollo-cache-inmemory": "^1.6.2",
+    "apollo-client": "^2.6.3",
+    "graphql": "^14.4.2",
     "graphql-tag": "^2.10.1",
-    "jest": "^24.7.1",
+    "jest": "^24.8.0",
     "ts-jest": "^24.0.2",
-    "typescript": "^3.4.3"
+    "typescript": "^3.5.3"
   },
   "peerDependencies": {
     "apollo-client": "~2.5.0 || ~2.6.0"
