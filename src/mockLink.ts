@@ -3,16 +3,20 @@ import { removeClientSetsFromDocument } from 'apollo-utilities';
 import { print } from 'graphql/language/printer';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
 
+type RequestHandlerOptions = {
+  replace?: boolean;
+};
+
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler> = {};
 
-  setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
+  setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler, options: RequestHandlerOptions = {}): void {
     const key = requestToKey(requestQuery);
 
-    if (this.requestHandlers[key]) {
+    if (this.requestHandlers[key] && !options.replace) {
       throw new Error(`Request handler already defined for query: ${print(requestQuery)}`);
     }
-    
+
     this.requestHandlers[key] = handler;
   }
 

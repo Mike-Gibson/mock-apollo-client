@@ -27,6 +27,13 @@ describe('class MockLink', () => {
         mockLink.setRequestHandler(queryTwo, () => Promise.resolve({ data: {} }));
       }).not.toThrow();
     });
+
+    it('does not throw when a handler has already been defined but override is true', () => {
+      expect(() => {
+        mockLink.setRequestHandler(queryOne, () => Promise.resolve({ data: {} }));
+        mockLink.setRequestHandler(queryOne, () => Promise.resolve({ data: {} }), {replace: true});
+      }).not.toThrow();
+    });
   });
 
   describe('method request', () => {
