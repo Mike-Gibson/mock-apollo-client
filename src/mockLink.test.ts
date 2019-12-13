@@ -29,9 +29,10 @@ describe('class MockLink', () => {
     });
 
     it('does not throw when a handler has already been defined but override is true', () => {
+      mockLink = new MockLink({ replaceHandlers: true });
       expect(() => {
         mockLink.setRequestHandler(queryOne, () => Promise.resolve({ data: {} }));
-        mockLink.setRequestHandler(queryOne, () => Promise.resolve({ data: {} }), {replace: true});
+        mockLink.setRequestHandler(queryOne, () => Promise.resolve({ data: {} }));
       }).not.toThrow();
     });
   });

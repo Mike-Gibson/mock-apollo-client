@@ -1,20 +1,21 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
 import { removeClientSetsFromDocument } from 'apollo-utilities';
 import { print } from 'graphql/language/printer';
-import { RequestHandler, RequestHandlerResponse } from './mockClient';
+import { RequestHandler, RequestHandlerResponse, MockClientOptions, defaultOptions } from './mockClient';
 
-type RequestHandlerOptions = {
-  replace?: boolean;
-};
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler> = {};
 
-  setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler, options: RequestHandlerOptions = {}): void {
+  constructor(private options: MockClientOptions = defaultOptions) {
+    super();
+  }
+
+  setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
     const key = requestToKey(requestQuery);
 
-    if (this.requestHandlers[key] && !options.replace) {
-      throw new Error(`Request handler already defined for query: ${print(requestQuery)}. You can replace this handler with the 'replace' option`);
+    if (this.requestHandlers[key] && !this.options.replaceHandlers) {
+      throw new Error(`Request handler already defined for query: ${print(requestQuery)}. Use createMockClient({ replaceHandlers: true }) to overwrite handlers.`);
     }
 
     this.requestHandlers[key] = handler;

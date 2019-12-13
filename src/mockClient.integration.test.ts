@@ -43,6 +43,7 @@ describe('MockClient integration tests', () => {
 
           expect(actual).toEqual(expect.objectContaining({ data: { one: 'one' } }));
         });
+
       });
 
       describe('when request handler is not defined', () => {
@@ -57,6 +58,49 @@ describe('MockClient integration tests', () => {
 
           await expect(promise).rejects.toThrowError('Request handler not defined for query');
         });
+      });
+    });
+  });
+
+  describe('createMockClient configuration options', () => {
+    const requestHandlerOne = () => Promise.resolve({ data: { one: 'one' }});
+    const requestHandlerTwo = () => Promise.resolve({ data: { one: 'two' }});
+
+    describe('resetHandlers', () => {
+      it('is false by default', async () => {
+        mockClient = createMockClient();
+
+        mockClient.setRequestHandler(queryOne, requestHandlerOne);
+
+        const promise = mockClient.query({ query: queryOne });
+
+        const actual = await promise;
+
+        expect(actual).toEqual(expect.objectContaining({ data: { one: 'one' } }));
+
+        expect(() => mockClient.setRequestHandler(queryOne, requestHandlerTwo)).toThrow('Request handler already defined for query');
+      });
+
+      it('allows handlers to be replaced', async () => {
+        mockClient = createMockClient({ replaceHandlers: true });
+
+        mockClient.setRequestHandler(queryOne, requestHandlerOne);
+
+        const promiseOne = mockClient.query({ query: queryOne });
+        const actualOne = await promiseOne;
+
+        expect(actualOne).toEqual(expect.objectContaining({ data: { one: 'one' } }));
+
+        // Clear InMemoryCache
+        await mockClient.resetStore();
+
+        // Same request, different handler
+        mockClient.setRequestHandler(queryOne, requestHandlerTwo);
+
+        const promiseTwo = mockClient.query({ query: queryOne });
+        const actualTwo = await promiseTwo;
+
+        expect(actualTwo).toEqual(expect.objectContaining({ data: { one: 'two' } }));
       });
     });
   });
