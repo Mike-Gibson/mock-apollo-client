@@ -14,7 +14,7 @@ export class MockLink extends ApolloLink {
     const key = requestToKey(requestQuery);
 
     if (this.requestHandlers[key] && !options.replace) {
-      throw new Error(`Request handler already defined for query: ${print(requestQuery)}`);
+      throw new Error(`Request handler already defined for query: ${print(requestQuery)}. You can replace this handler with the 'replace' option`);
     }
 
     this.requestHandlers[key] = handler;
