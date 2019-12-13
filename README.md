@@ -112,7 +112,7 @@ The method `setRequestHandler` is passed a function to call when Apollo client e
 ```typescript
 const queryHandler = jest.fn().mockResolvedValue({ data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } } });
 
-mockApolloClient.setRequestHandler(GET_DOG_QUERY, queryHandler);
+mockApolloClient.setRequestHandler(GET_DOG_QUERY, requestHandler);
 
 // ....
 
