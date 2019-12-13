@@ -43,7 +43,6 @@ describe('MockClient integration tests', () => {
 
           expect(actual).toEqual(expect.objectContaining({ data: { one: 'one' } }));
         });
-
       });
 
       describe('when request handler is not defined', () => {

@@ -1,13 +1,12 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
 import { removeClientSetsFromDocument } from 'apollo-utilities';
 import { print } from 'graphql/language/printer';
-import { RequestHandler, RequestHandlerResponse, MockClientOptions, defaultOptions } from './mockClient';
-
+import { RequestHandler, RequestHandlerResponse, MockClientOptions } from './mockClient';
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler> = {};
 
-  constructor(private options: MockClientOptions = defaultOptions) {
+  constructor(private options: MockClientOptions = {}) {
     super();
   }
 

@@ -12,14 +12,10 @@ export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
   { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };
 
 export type MockClientOptions = {
-  replaceHandlers: boolean;
+  replaceHandlers?: boolean;
 };
 
-export const defaultOptions = {
-  replaceHandlers: false,
-}
-
-export const createMockClient = (options: MockClientOptions = defaultOptions): MockApolloClient => {
+export const createMockClient = (options: MockClientOptions = {}): MockApolloClient => {
   const mockLink = new MockLink(options);
 
   const client = new ApolloClient({
