@@ -62,10 +62,10 @@ describe('MockClient integration tests', () => {
   });
 
   describe('createMockClient configuration options', () => {
-    const requestHandlerOne = () => Promise.resolve({ data: { one: 'one' }});
-    const requestHandlerTwo = () => Promise.resolve({ data: { one: 'two' }});
+    describe('replaceHandlers', () => {
+      const requestHandlerOne = () => Promise.resolve({ data: { one: 'one' }});
+      const requestHandlerTwo = () => Promise.resolve({ data: { one: 'two' }});
 
-    describe('resetHandlers', () => {
       it('is false by default', async () => {
         mockClient = createMockClient();
 
@@ -77,7 +77,8 @@ describe('MockClient integration tests', () => {
 
         expect(actual).toEqual(expect.objectContaining({ data: { one: 'one' } }));
 
-        expect(() => mockClient.setRequestHandler(queryOne, requestHandlerTwo)).toThrow('Request handler already defined for query');
+        expect(() => mockClient.setRequestHandler(queryOne, requestHandlerTwo))
+          .toThrow('Request handler already defined for query');
       });
 
       it('allows handlers to be replaced', async () => {
