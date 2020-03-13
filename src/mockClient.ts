@@ -1,4 +1,4 @@
-import ApolloClient from 'apollo-client';
+import ApolloClient, { ApolloClientOptions } from 'apollo-client';
 import { InMemoryCache as Cache, NormalizedCacheObject } from 'apollo-cache-inmemory';
 import { DocumentNode } from 'apollo-link';
 import { MockLink } from './mockLink';
@@ -11,7 +11,7 @@ export type RequestHandlerResponse<T> = { data: T, errors?: any[] };
 export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
   { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };
 
-export const createMockClient = (): MockApolloClient => {
+export const createMockClient = (options?: Partial<ApolloClientOptions<NormalizedCacheObject>>): MockApolloClient => {
   const mockLink = new MockLink();
 
   const client = new ApolloClient({
@@ -19,6 +19,7 @@ export const createMockClient = (): MockApolloClient => {
       addTypename: false, // TODO: Handle addTypename?
     }),
     link: mockLink,
+    ...options
   });
 
   const mockMethods = {
