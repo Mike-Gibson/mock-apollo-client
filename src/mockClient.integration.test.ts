@@ -9,53 +9,98 @@ import { ApolloQueryResult } from 'apollo-client';
 describe('MockClient integration tests', () => {
   let mockClient: MockApolloClient;
 
-  const queryOne = gql`query One {one}`;
-  const queryTwo = gql`query Two {two}`;
-
   beforeEach(() => {
-    mockClient = createMockClient();
+    jest.spyOn(console, 'warn');
+    jest.spyOn(console, 'error');
   });
 
-  describe('Given a request handler has been defined', () => {
-    let requestHandlerOne: jest.Mock;
-    let resolveRequestOne: Function;
+  afterEach(() => {
+    expect(console.warn).not.toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
+  });
 
-    beforeEach(() => {
-      requestHandlerOne = jest.fn(() => new Promise((r) => { resolveRequestOne = r }));
+  describe('Basic tests', () => {
+    describe('Given a request handler has been defined', () => {
+      const queryOne = gql`query One {one}`;
+      const queryTwo = gql`query Two {two}`;
 
-      mockClient.setRequestHandler(queryOne, requestHandlerOne);
+      let requestHandlerOne: jest.Mock;
+      let resolveRequestOne: Function;
+
+      beforeEach(() => {
+        mockClient = createMockClient();
+
+        requestHandlerOne = jest.fn(() => new Promise((r) => { resolveRequestOne = r }));
+
+        mockClient.setRequestHandler(queryOne, requestHandlerOne);
+      });
+
+      describe('query', () => {
+        describe('when request handler is defined', () => {
+          let promise: Promise<ApolloQueryResult<any>>;
+
+          beforeEach(() => {
+            promise = mockClient.query({ query: queryOne });
+          });
+
+          it('returns a promise which resolves to the correct value', async () => {
+            expect(promise).toBeInstanceOf(Promise);
+
+            resolveRequestOne({ data: { one: 'one' } });
+
+            const actual = await promise;
+
+            expect(actual).toEqual(expect.objectContaining({ data: { one: 'one' } }));
+          });
+        });
+
+        describe('when request handler is not defined', () => {
+          let promise: Promise<ApolloQueryResult<any>>;
+
+          beforeEach(() => {
+            promise = mockClient.query({ query: queryTwo });
+          });
+
+          it('returns a promise which rejects due to handler not being defined', async () => {
+            expect(promise).toBeInstanceOf(Promise);
+
+            await expect(promise).rejects.toThrowError('Request handler not defined for query');
+          });
+        });
+      });
     });
+  });
 
-    describe('query', () => {
-      describe('when request handler is defined', () => {
-        let promise: Promise<ApolloQueryResult<any>>;
+  describe('Fragments', () => {
+    describe('Given a query with a simple fragment', () => {
+      const query = gql`
+        query Comment {...CommentFragment}
+        fragment CommentFragment on Comment {id text}
+      `;
+
+      let requestHandler: jest.Mock;
+
+      beforeEach(() => {
+        mockClient = createMockClient();
+
+        requestHandler = jest.fn().mockResolvedValue({ data: { id: 1, text: 'hello' } });
+
+        mockClient.setRequestHandler(query, requestHandler);
+      });
+
+      describe('when the query is executed', () => {
+        let promise: Promise<any>;
 
         beforeEach(() => {
-          promise = mockClient.query({ query: queryOne });
+          promise = mockClient.query({ query });
         });
 
         it('returns a promise which resolves to the correct value', async () => {
           expect(promise).toBeInstanceOf(Promise);
 
-          resolveRequestOne({ data: { one: 'one' } });
-
           const actual = await promise;
 
-          expect(actual).toEqual(expect.objectContaining({ data: { one: 'one' } }));
-        });
-      });
-
-      describe('when request handler is not defined', () => {
-        let promise: Promise<ApolloQueryResult<any>>;
-
-        beforeEach(() => {
-          promise = mockClient.query({ query: queryTwo });
-        });
-
-        it('returns a promise which rejects due to handler not being defined', async () => {
-          expect(promise).toBeInstanceOf(Promise);
-
-          await expect(promise).rejects.toThrowError('Request handler not defined for query');
+          expect(actual).toEqual(expect.objectContaining({ data: { id: 1, text: 'hello' } }));
         });
       });
     });
