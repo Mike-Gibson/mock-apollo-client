@@ -83,7 +83,9 @@ describe('MockClient integration tests', () => {
       beforeEach(() => {
         mockClient = createMockClient();
 
-        requestHandler = jest.fn().mockResolvedValue({ data: { id: 1, text: 'hello' } });
+        requestHandler = jest.fn()
+
+        requestHandler.mockResolvedValue({ data: { id: 1, text: 'hello' } });
 
         mockClient.setRequestHandler(query, requestHandler);
       });
@@ -100,7 +102,24 @@ describe('MockClient integration tests', () => {
 
           const actual = await promise;
 
+          console.log(actual)
+
           expect(actual).toEqual(expect.objectContaining({ data: { id: 1, text: 'hello' } }));
+        });
+
+        it('returns a promise which resolves to the correct value when called twice', async () => {
+          expect(promise).toBeInstanceOf(Promise);
+
+          const actual = await promise;
+
+          expect(actual).toEqual(expect.objectContaining({ data: { id: 1, text: 'hello' } }));
+
+          requestHandler.mockResolvedValue({ data: { id: 2, text: 'world' } });
+          promise = mockClient.query({ query });
+
+          const actualSecondCall = await promise;
+
+          expect(actualSecondCall).toEqual(expect.objectContaining({ data: { id: 2, text: 'world' } }));
         });
       });
     });
