@@ -20,8 +20,8 @@ export const createMockClient = (options?: MockApolloClientOptions): MockApolloC
     cache: new Cache({
       addTypename: false, // TODO: Handle addTypename?
     }),
-    link: mockLink,
-    ...options
+    ...options,
+    link: mockLink
   });
 
   const mockMethods = {
