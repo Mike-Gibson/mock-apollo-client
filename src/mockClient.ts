@@ -11,7 +11,7 @@ export type RequestHandlerResponse<T> = { data: T, errors?: any[] };
 export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
   { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };
 
-export type MockApolloClientOptions = Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>>;
+export type MockApolloClientOptions = Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> | undefined;
 
 export const createMockClient = (options?: MockApolloClientOptions): MockApolloClient => {
   if ((options as any)?.link) {
@@ -22,7 +22,7 @@ export const createMockClient = (options?: MockApolloClientOptions): MockApolloC
 
   const client = new ApolloClient({
     cache: new Cache({
-      addTypename: false, // TODO: Handle addTypename?
+      addTypename: false,
     }),
     ...options,
     link: mockLink
