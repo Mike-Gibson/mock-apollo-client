@@ -147,3 +147,18 @@ mockApolloClient.setRequestHandler(
 ### Mutations
 
 Mutations can be tested the same way that queries are, by using `setRequestHandler` and specifying a request handler for the mutation query.
+
+### Specifying Apollo client options
+
+The `createMockClient` method can be provided with the same constructor arguments that `ApolloClient` accepts which are used when instantiating the mock Apollo client.
+
+For example, to specify the cache (and fragment matcher) that should be used:
+```typescript
+const cache = new InMemoryCache({
+  fragmentMatcher: myCustomFragmentMatcher,
+});
+
+const mockClient = createMockClient({ cache });
+```
+
+Note: it is not possible to specify the `link` to use as this is how Mock Apollo Client injects its behaviour.
