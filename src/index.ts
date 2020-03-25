@@ -1,1 +1,1 @@
-export { createMockClient, MockApolloClient, RequestHandler } from './mockClient';
+export * from './mockClient';
