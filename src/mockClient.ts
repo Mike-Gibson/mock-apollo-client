@@ -14,6 +14,10 @@ export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
 export type MockApolloClientOptions = Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>>;
 
 export const createMockClient = (options?: MockApolloClientOptions): MockApolloClient => {
+  if ((options as any)?.link) {
+    throw new Error('Providing link to use is not supported.');
+  }
+
   const mockLink = new MockLink();
 
   const client = new ApolloClient({
