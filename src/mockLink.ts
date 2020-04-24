@@ -1,5 +1,4 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
-import { removeClientSetsFromDocument } from 'apollo-utilities';
 import { print } from 'graphql/language/printer';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
 
@@ -52,9 +51,8 @@ export class MockLink extends ApolloLink {
 }
 
 function requestToKey(requestQuery: DocumentNode): string {
-  const query = removeClientSetsFromDocument(requestQuery);
-  const queryString = query && print(query);
-  const requestKey = { query: queryString };
+  const queryString = requestQuery && print(requestQuery);
+  const requestKey = { requestQuery: queryString };
   return JSON.stringify(requestKey);
 }
 
