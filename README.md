@@ -4,7 +4,7 @@ Helps unit test components which use the Apollo Client.
 
 > **Note**: This library is currently only compatible with Apollo Client 2.
 >
-> Track version 3 support in #11.
+> Track version 3 support in [#11](https://github.com/Mike-Gibson/mock-apollo-client/issues/11).
 
 ## Motivation
 
