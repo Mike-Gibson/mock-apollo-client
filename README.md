@@ -2,6 +2,10 @@
 
 Helps unit test components which use the Apollo Client.
 
+> **Note**: This library is currently only compatible with Apollo Client 2.
+>
+> Track version 3 support in #11.
+
 ## Motivation
 
 Whilst using the impressive `react-apollo` library, I ran into issues while trying to unit test components which used the GraphQL `Query` and `Mutation` components. The `react-apollo` library includes a `MockedProvider` component which allows query and mutation results to be mocked, but didn't offer enough control within unit tests. The `react-apollo` documentation for testing can be found [here](https://www.apollographql.com/docs/react/recipes/testing).
