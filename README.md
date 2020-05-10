@@ -37,7 +37,7 @@ The examples have been adapted from the official `react-apollo` testing docs and
 
 Consider the file below, which contains a single GraphQL query and a component which is responsible for rendering the result of the query:
 
-```typescript
+```tsx
 // dog.ts
 
 import * as React from 'react';
@@ -72,7 +72,7 @@ export const Dog = ({ name }) => (
 
 To unit test this component using `mock-apollo-client`, the test file could look like the following:
 
-```typescript
+```tsx
 // dog.test.ts
 
 import { mount, ReactWrapper } from 'enzyme';
@@ -166,3 +166,111 @@ const mockClient = createMockClient({ cache });
 ```
 
 Note: it is not possible to specify the `link` to use as this is how Mock Apollo Client injects its behaviour.
+
+### Client directives
+
+#### Using client resolvers
+
+If a query contains `@client` directives, `mock-apollo-client` by default expects that the cache or client side resolvers will be used. This matches the default behaviour of Apollo client when resolvers are specified.
+
+So for example, when there is a query such as
+
+```graphql
+query CurrentUser {
+  currentUser {
+    id
+    name
+    authToken @client
+  }
+}
+```
+when a request handler is configured for the query using `setRequestHandler`, `mock-apollo-client` expects it will receive the query for `id` and `name` only during the execution of the query.
+
+Code for this scenario might look as follows:
+
+```typescript
+// production code
+
+const GET_CURRENT_USER = gql`
+  query CurrentUser {
+    currentUser {
+      id
+      name
+      authToken @client
+    }
+  }`;
+
+const resolvers = {
+  Query: {
+    authToken: () => sessionStorage.getItem('authToken'),
+  },
+};
+
+const client = new ApolloClient({
+  ...
+  resolvers,
+});
+
+// Then at some point, client.query({ query: GET_CURRENT_USER }) would be called.
+```
+
+```typescript
+// Test code (using client resolvers)
+
+const mockClient = createMockClient({ resolvers });
+
+const handler = () => Promise.resolve({ data: { currentUser: { id: 1, name: 'Bob' } } });
+mockClient.setRequestHandler(GET_CURRENT_USER, handler);
+
+sessionStorage.setItem('authToken', 'abcd');
+```
+
+The mock client above would then behave similarly to how it would in production, where client resolvers are used, which in this example looks up a value from `sessionStorage`.
+
+Instead of setting values in `sessionStorage`, spies could be configured on the resolvers and the responses could be mocked. For example:
+
+```typescript
+// Test code (using client resolvers and jest spies)
+
+const mockClient = createMockClient({ resolvers });
+
+const handler = () => Promise.resolve({ data: { currentUser: { id: 1, name: 'Bob' } } });
+
+jest
+  .spyOn(resolvers.Query, 'authToken')
+  .mockReturnValue('abcd');
+
+mockClient.setRequestHandler(GET_CURRENT_USER, handler);
+```
+
+#### Without client resolvers
+
+If client side resolvers are not defined, Apollo client does not remove fields marked with `@client` directives and passes them down to the `mock-apollo-client` link. This means that similar test set up code above without specifying resolvers will not work:
+
+```typescript
+// Invalid test code (without client resolvers)
+
+const mockClient = createMockClient(); // resolvers not specified
+
+const handler = () => Promise.resolve({
+  data: { currentUser: { id: 1, name: 'Bob', authToken: 'abc' } },
+});
+
+mockClient.setRequestHandler(GET_CURRENT_USER, handler);
+```
+
+Instead, while calling `setRequestHandler`, we must specify `includeClientDirectives` as follows:
+
+```typescript
+// Test code (without client resolvers)
+
+const mockClient = createMockClient(); // resolvers not specified
+
+const handler = () => Promise.resolve({
+  data: { currentUser: { id: 1, name: 'Bob', authToken: 'abc' } },
+});
+
+mockClient.setRequestHandler(GET_CURRENT_USER, handler, { includeClientDirectives: true });
+```
+
+This ensures `mock-apollo-client` finds the correct handler when the query is executed.
