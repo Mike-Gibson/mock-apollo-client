@@ -1,18 +1,25 @@
+import { ApolloQueryResult } from 'apollo-client';
 import gql from 'graphql-tag';
 
 // Currently do not test against all valid peer dependency versions of apollo
 // Would be nice to have, but can't find an elegant way of doing it.
 
 import { createMockClient, MockApolloClient } from './mockClient';
-import { ApolloQueryResult } from 'apollo-client';
 
 describe('MockClient integration tests', () => {
   let mockClient: MockApolloClient;
 
+  beforeEach(() => {
+    jest.spyOn(console, 'warn')
+      .mockReset();
+    jest.spyOn(console, 'error')
+      .mockReset();
+  });
+
   describe('Simple queries', () => {
     const queryOne = gql`query One {one}`;
     const queryTwo = gql`query Two {two}`;
-    
+
     let requestHandlerOne: jest.Mock;
     let resolveRequestOne: Function;
 
@@ -40,6 +47,10 @@ describe('MockClient integration tests', () => {
 
         expect(actual).toEqual(expect.objectContaining({ data: { one: 'one' } }));
       });
+
+      it('throws when a handler is added for the same query', () => {
+        expect(() => mockClient.setRequestHandler(queryOne, jest.fn())).toThrowError('Request handler already defined ');
+      });
     });
 
     describe('Given request handler is not defined', () => {
@@ -58,31 +69,88 @@ describe('MockClient integration tests', () => {
   });
 
   describe('Client directives', () => {
-    describe('Given query which entirely uses cache', () => {
-      const clientDirectiveQuery = gql` { visibilityFilter @client }`;
+    describe('Given entire query is client-side and client side resolvers exist', () => {
+      const query = gql` { visibilityFilter @client }`;
 
       let requestHandler: jest.Mock;
 
       beforeEach(() => {
-        // Empty resolvers required when only using client cache
-        // https://www.apollographql.com/docs/react/data/local-state/#handling-client-fields-with-the-cache
-        mockClient = createMockClient({ resolvers: {} });
+        mockClient = createMockClient({
+          resolvers: {
+            Query: {
+              visibilityFilter: () => 'client resolver data',
+            },
+          },
+        });
 
-        requestHandler = jest.fn().mockResolvedValue({ data: { visibilityFilter: 'mock handler data' } });
-        mockClient.writeData({ data: { visibilityFilter: 'mock cache data' } });
-
-        mockClient.setRequestHandler(clientDirectiveQuery, requestHandler);
+        requestHandler = jest.fn().mockResolvedValue({
+          data: {
+            visibilityFilter: 'handler data',
+          },
+        });
       });
 
-      it('uses local state and does not call request handler', async () => {
-        const result = await mockClient.query({ query: clientDirectiveQuery });
+      it('throws when request handler has not been configured to include client directives', () => {
+        expect(() => {
+          mockClient.setRequestHandler(query, requestHandler, { includeClientDirectives: false });
+        }).toThrowError('The query after normalisation is null');
 
-        expect(result.data).toEqual({ visibilityFilter: 'mock cache data' });
-        expect(requestHandler).not.toBeCalled();
+        expect(console.warn).not.toBeCalled();
+      });
+
+      it('warns when request handler has been configured to include client directives and does not handle request', async () => {
+        expect(() => {
+          mockClient.setRequestHandler(query, requestHandler, { includeClientDirectives: true });
+        }).not.toThrow();
+
+        expect(console.warn).toBeCalledTimes(1);
+        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - includeClientDirectives should not be used when local resolvers have been configured.');
+
+        const result = await mockClient.query({ query });
+        expect(result.data).toEqual({ visibilityFilter: 'client resolver data' });
+        expect(requestHandler).not.toHaveBeenCalled();
       });
     });
 
-    describe('Given query which partially uses cache', () => {
+    describe('Given entire query is client-side and client side resolvers do not exist', () => {
+      const query = gql` { visibilityFilter @client }`;
+
+      let requestHandler: jest.Mock;
+
+      beforeEach(() => {
+        mockClient = createMockClient({
+          resolvers: undefined,
+        });
+
+        requestHandler = jest.fn().mockResolvedValue({
+          data: {
+            visibilityFilter: 'handler data',
+          },
+        });
+      });
+
+      it('throws when request handler has not been configured to include client directives', () => {
+        expect(() => {
+          mockClient.setRequestHandler(query, requestHandler, { includeClientDirectives: false });
+        }).toThrowError('The query after normalisation is null');
+
+        expect(console.warn).not.toBeCalled();
+      });
+
+      it('does not warn when request handler has been configured to include client directives and handles request', async () => {
+        expect(() => {
+          mockClient.setRequestHandler(query, requestHandler, { includeClientDirectives: true });
+        }).not.toThrow();
+
+        expect(console.warn).not.toBeCalled();
+
+        const result = await mockClient.query({ query });
+        expect(result.data).toEqual({ visibilityFilter: 'handler data' });
+        expect(requestHandler).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    describe('Given part of the query is client-side and client side resolver exists', () => {
       const query = gql`
         query User {
           user {
@@ -96,21 +164,37 @@ describe('MockClient integration tests', () => {
       let requestHandler: jest.Mock;
 
       beforeEach(() => {
-        // Empty resolvers required when only using client cache
-        // https://www.apollographql.com/docs/react/data/local-state/#handling-client-fields-with-the-cache
-        mockClient = createMockClient({ resolvers: {} });
+        mockClient = createMockClient({
+          resolvers: {
+            Query: {
+              user: () => ({ isLoggedIn: true }),
+            },
+          },
+        });
 
-        requestHandler = jest.fn().mockResolvedValue({ data: { user: { id: 1, name: 'bob' } } });
-        mockClient.writeData({ data: { user: { isLoggedIn: true } } });
-
-        mockClient.setRequestHandler(query, requestHandler);
+        requestHandler = jest.fn().mockResolvedValue({ data: { user: { id: 1, name: 'bob', isLoggedIn: false } } });
       });
 
-      it('combines local state and request handler result', async () => {
+      it('returns merged result when request handler has not been configured to include client directives', async () => {
+        mockClient.setRequestHandler(query, requestHandler, { includeClientDirectives: false });
+
         const result = await mockClient.query({ query });
 
         expect(result.data).toEqual({ user: { id: 1, name: 'bob', isLoggedIn: true } });
         expect(requestHandler).toBeCalledTimes(1);
+        expect(console.warn).not.toBeCalled();
+      });
+
+      it('warns when request handler has been configured to include client directives and does not handle request', async () => {
+        expect(() => {
+          mockClient.setRequestHandler(query, requestHandler, { includeClientDirectives: true });
+        }).not.toThrow();
+
+        expect(console.warn).toBeCalledTimes(1);
+        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - includeClientDirectives should not be used when local resolvers have been configured.');
+
+        await expect(mockClient.query({ query }))
+          .rejects.toThrowError('Request handler not defined for query');
       });
     });
   });

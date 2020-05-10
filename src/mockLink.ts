@@ -1,13 +1,13 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
 import { removeClientSetsFromDocument } from 'apollo-utilities';
 import { print } from 'graphql/language/printer';
-import { RequestHandler, RequestHandlerResponse } from './mockClient';
+import { RequestHandler, RequestHandlerOptions, RequestHandlerResponse } from './mockClient';
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler> = {};
 
-  setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler, options: { includeClientDirectives: boolean } = { includeClientDirectives: false }): void {
-    const normalised = normaliseRequest(requestQuery, options);
+  setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler, options: RequestHandlerOptions = { includeClientDirectives: false }): void {
+    const normalised = normaliseRequest(requestQuery, { includeClientDirectives: options.includeClientDirectives || false });
 
     if (normalised === null) {
       throw new Error('The query after normalisation is null. ' +

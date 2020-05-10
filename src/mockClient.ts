@@ -8,8 +8,10 @@ export type RequestHandler<TData = any, TVariables = any> =
 
 export type RequestHandlerResponse<T> = { data: T, errors?: any[] };
 
+export type RequestHandlerOptions = { includeClientDirectives?: boolean };
+
 export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
-  { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };
+  { setRequestHandler: (query: DocumentNode, handler: RequestHandler, options?: RequestHandlerOptions) => void };
 
 export type MockApolloClientOptions = Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> | undefined;
 
@@ -29,8 +31,18 @@ export const createMockClient = (options?: MockApolloClientOptions): MockApolloC
   });
 
   const mockMethods = {
-    setRequestHandler: mockLink.setRequestHandler.bind(mockLink),
+    setRequestHandler: (query: DocumentNode, handler: RequestHandler, options?: RequestHandlerOptions) => {
+      if (options?.includeClientDirectives && areResolversDefined(client)) {
+        console.warn('Warning: mock-apollo-client - includeClientDirectives should not be used when local resolvers have been configured.');
+      }
+
+      mockLink.setRequestHandler(query, handler, options);
+    },
   };
 
   return Object.assign(client, mockMethods);
 }
+
+const areResolversDefined = (client: ApolloClient<any>) =>
+  // getResolvers returns empty object if not defined, so cannot check for truthy value
+  client.getResolvers() === client.getResolvers();
