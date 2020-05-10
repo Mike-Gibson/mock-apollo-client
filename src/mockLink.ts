@@ -6,13 +6,21 @@ import { RequestHandler, RequestHandlerResponse } from './mockClient';
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler> = {};
 
-  setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
-    const key = requestToKey(requestQuery);
+  setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler, options: { includeClientDirectives: boolean } = { includeClientDirectives: false }): void {
+    const normalised = normaliseRequest(requestQuery, options);
+
+    if (normalised === null) {
+      throw new Error('The query after normalisation is null. ' +
+        'If the query contains @client directives, is entirely client side and you are not configuring client side resolvers, consider ' +
+        'using includeClientDirectives: true when configuring the request handler.');
+    }
+
+    const key = requestToKey(normalised);
 
     if (this.requestHandlers[key]) {
-      throw new Error(`Request handler already defined for query: ${print(requestQuery)}`);
+      throw new Error(`Request handler already defined for query: ${format(normalised)}`);
     }
-    
+
     this.requestHandlers[key] = handler;
   }
 
@@ -22,7 +30,7 @@ export class MockLink extends ApolloLink {
     const handler = this.requestHandlers[key];
 
     if (!handler) {
-      throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
+      throw new Error(`Request handler not defined for query: ${format(operation.query)}`);
     }
 
     let resultPromise: Promise<RequestHandlerResponse<any>> | undefined = undefined;
@@ -51,13 +59,21 @@ export class MockLink extends ApolloLink {
   }
 }
 
-function requestToKey(requestQuery: DocumentNode): string {
-  const query = removeClientSetsFromDocument(requestQuery);
-  const queryString = query && print(query);
+const normaliseRequest = (requestQuery: DocumentNode, options: { includeClientDirectives: boolean }): DocumentNode | null =>
+  options.includeClientDirectives
+    ? requestQuery
+    : removeClientSetsFromDocument(requestQuery);
+
+const requestToKey = (query: DocumentNode): string => {
+  const queryString = print(query);
   const requestKey = { query: queryString };
   return JSON.stringify(requestKey);
 }
 
-function isPromise(maybePromise: any): maybePromise is Promise<any> {
-  return maybePromise && typeof (maybePromise as any).then === 'function';
-}
+const format = (query: DocumentNode | null): string =>
+  query
+    ? print(query)
+    : 'null';
+
+const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
+  maybePromise && typeof (maybePromise as any).then === 'function';
