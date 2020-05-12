@@ -27,6 +27,51 @@ describe('class MockLink', () => {
         mockLink.setRequestHandler(queryTwo, () => Promise.resolve({ data: {} }));
       }).not.toThrow();
     });
+
+    describe('when queries contain @client directives', () => {
+      const clientSideQueryOne = gql`query One {one @client}`;
+      const clientSideQueryTwo = gql`query Two {two @client}`;
+      const mixedQueryOne = gql`query Three {a @client b}`;
+      const mixedQueryTwo = gql`query Four {c @client d}`;
+
+      it('does not throw when adding client-side query', () => {
+        expect(() => {
+          mockLink.setRequestHandler(clientSideQueryOne, jest.fn());
+        }).not.toThrow();
+      });
+
+      it('throws when the same client-side only query is added twice', () => {
+        mockLink.setRequestHandler(clientSideQueryOne, jest.fn());
+
+        expect(() => {
+          mockLink.setRequestHandler(clientSideQueryOne, jest.fn());
+        }).toThrowError('Request handler already defined for query');
+      });
+
+      it('does not throw when two different client-side only queries are added', () => {
+        mockLink.setRequestHandler(clientSideQueryOne, jest.fn());
+
+        expect(() => {
+          mockLink.setRequestHandler(clientSideQueryTwo, jest.fn());
+        }).not.toThrow();
+      });
+
+      it('throws when the same mixed query is added twice', () => {
+        mockLink.setRequestHandler(mixedQueryOne, jest.fn());
+
+        expect(() => {
+          mockLink.setRequestHandler(mixedQueryOne, jest.fn());
+        }).toThrowError('Request handler already defined for query');
+      });
+
+      it('does not throw when two different mixed queries are added', () => {
+        mockLink.setRequestHandler(mixedQueryOne, jest.fn());
+
+        expect(() => {
+          mockLink.setRequestHandler(mixedQueryTwo, jest.fn());
+        }).not.toThrow();
+      });
+    });
   });
 
   describe('method request', () => {
@@ -104,6 +149,92 @@ describe('class MockLink', () => {
 
       expect(() => mockLink.request(queryOneOperation))
         .toThrow("Unexpected error whilst calling request handler: Error in handler");
+    });
+
+    describe('when query contains @client directives', () => {
+      it('correctly executes the handler when query is entirely client side', async () => {
+        const clientSideQuery = gql`query One {one @client}`;
+
+        const handler = jest.fn().mockResolvedValue({ data: 'Query result' });
+        mockLink.setRequestHandler(clientSideQuery, handler);
+
+        const queryOperation = { query: clientSideQuery, variables: { a: 'one'} } as Partial<Operation> as Operation;
+
+        const observer = mockLink.request(queryOperation);
+
+        const next = jest.fn();
+        const error = jest.fn();
+        const complete = jest.fn();
+
+        observer.subscribe(next, error, complete);
+
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(handler).toBeCalledTimes(1);
+        expect(handler).toBeCalledWith({ a: 'one' });
+
+        expect(next).toBeCalledTimes(1);
+        expect(next).toBeCalledWith({ data: 'Query result' });
+        expect(error).not.toBeCalled();
+        expect(complete).toBeCalledTimes(1);
+      });
+
+      it('correctly executes the handler when query is mixed and there are no client resolvers', async () => {
+        const mixedQuery = gql`query Two {a @client b}`;
+
+        const handler = jest.fn().mockResolvedValue({ data: 'Query result' });
+        mockLink.setRequestHandler(mixedQuery, handler);
+
+        // When there are no client resolvers, client directives get passed down to the link
+        const queryOperation = { query: mixedQuery, variables: { a: 'one'} } as Partial<Operation> as Operation;
+
+        const observer = mockLink.request(queryOperation);
+
+        const next = jest.fn();
+        const error = jest.fn();
+        const complete = jest.fn();
+
+        observer.subscribe(next, error, complete);
+
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(handler).toBeCalledTimes(1);
+        expect(handler).toBeCalledWith({ a: 'one' });
+
+        expect(next).toBeCalledTimes(1);
+        expect(next).toBeCalledWith({ data: 'Query result' });
+        expect(error).not.toBeCalled();
+        expect(complete).toBeCalledTimes(1);
+      });
+
+      it('correctly executes the handler when query is mixed and there are client resolvers', async () => {
+        const mixedQuery = gql`query Two {a @client b}`;
+        const queryWithoutClientDirectives = gql`query Two {b}`;
+
+        const handler = jest.fn().mockResolvedValue({ data: 'Query result' });
+        mockLink.setRequestHandler(mixedQuery, handler);
+
+        // When there are client resolvers, client directives are removed before being passed down to the link
+        const queryOperation = { query: queryWithoutClientDirectives, variables: { a: 'one'} } as Partial<Operation> as Operation;
+
+        const observer = mockLink.request(queryOperation);
+
+        const next = jest.fn();
+        const error = jest.fn();
+        const complete = jest.fn();
+
+        observer.subscribe(next, error, complete);
+
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(handler).toBeCalledTimes(1);
+        expect(handler).toBeCalledWith({ a: 'one' });
+
+        expect(next).toBeCalledTimes(1);
+        expect(next).toBeCalledWith({ data: 'Query result' });
+        expect(error).not.toBeCalled();
+        expect(complete).toBeCalledTimes(1);
+      });
     });
   });
 });

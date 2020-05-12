@@ -37,7 +37,7 @@ The examples have been adapted from the official `react-apollo` testing docs and
 
 Consider the file below, which contains a single GraphQL query and a component which is responsible for rendering the result of the query:
 
-```typescript
+```tsx
 // dog.ts
 
 import * as React from 'react';
@@ -72,7 +72,7 @@ export const Dog = ({ name }) => (
 
 To unit test this component using `mock-apollo-client`, the test file could look like the following:
 
-```typescript
+```tsx
 // dog.test.ts
 
 import { mount, ReactWrapper } from 'enzyme';
