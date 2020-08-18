@@ -1,5 +1,5 @@
-import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
-import { hasDirectives, removeClientSetsFromDocument } from 'apollo-utilities';
+import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from '@apollo/client/core';
+import { hasDirectives, removeClientSetsFromDocument } from '@apollo/client/utilities';
 import { print } from 'graphql/language/printer';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
 

@@ -1,7 +1,6 @@
-import ApolloClient, { ApolloClientOptions } from 'apollo-client';
-import { InMemoryCache as Cache, NormalizedCacheObject } from 'apollo-cache-inmemory';
-import { DocumentNode } from 'apollo-link';
-import { removeClientSetsFromDocument } from 'apollo-utilities';
+import { ApolloClientOptions, ApolloClient, DocumentNode } from '@apollo/client/core';
+import { InMemoryCache as Cache, NormalizedCacheObject } from '@apollo/client/cache';
+import { removeClientSetsFromDocument } from '@apollo/client/utilities';
 import { MockLink } from './mockLink';
 
 export type RequestHandler<TData = any, TVariables = any> =

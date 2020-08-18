@@ -1,5 +1,4 @@
-import { ApolloQueryResult } from 'apollo-client';
-import gql from 'graphql-tag';
+import { ApolloQueryResult, gql } from '@apollo/client/core';
 
 // Currently do not test against all valid peer dependency versions of apollo
 // Would be nice to have, but can't find an elegant way of doing it.

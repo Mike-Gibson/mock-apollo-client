@@ -1,5 +1,4 @@
-import { Operation } from 'apollo-link';
-import gql from 'graphql-tag';
+import { gql, Operation } from '@apollo/client/core';
 
 import { MockLink } from './mockLink';
 
