@@ -1,48 +1,51 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from '@apollo/client/core';
-import { hasDirectives, removeClientSetsFromDocument } from '@apollo/client/utilities';
-import { print } from 'graphql/language/printer';
+import { print } from 'graphql';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
+import { removeClientSetsFromDocument } from '@apollo/client/utilities';
 
 export class MockLink extends ApolloLink {
-  private requestHandlers: Record<string, RequestHandler> = {};
+  private requestHandlers: Record<string, RequestHandler | undefined> = {};
 
   setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
-    const identifiers = getIdentifiers(requestQuery);
+    const queryWithoutClientDirectives = removeClientSetsFromDocument(requestQuery);
 
-    for (const identifier of identifiers) {
-      const key = requestToKey(identifier);
-
-      if (this.requestHandlers[key]) {
-        throw new Error(`Request handler already defined for query: ${format(identifier)}`);
-      }
-
-      this.requestHandlers[key] = handler;
+    if (queryWithoutClientDirectives === null) {
+      console.warn('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+      return;
     }
+
+    const key = requestToKey(queryWithoutClientDirectives);
+
+    if (this.requestHandlers[key]) {
+      throw new Error(`Request handler already defined for query: ${print(requestQuery)}`);
+    }
+
+    this.requestHandlers[key] = handler;
   }
 
-  request(operation: Operation) {
-    const key = requestToKey(operation.query);
+  request = (operation: Operation) =>
+    new Observable<FetchResult>(observer => {
+      const key = requestToKey(operation.query);
 
-    const handler = this.requestHandlers[key];
+      const handler = this.requestHandlers[key];
 
-    if (!handler) {
-      throw new Error(`Request handler not defined for query: ${format(operation.query)}`);
-    }
+      if (!handler) {
+        throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
+      }
 
-    let resultPromise: Promise<RequestHandlerResponse<any>> | undefined = undefined;
+      let resultPromise: Promise<RequestHandlerResponse<any>> | undefined = undefined;
 
-    try {
-      resultPromise = handler(operation.variables);
-    } catch (error) {
-      throw new Error(`Unexpected error whilst calling request handler: ${error.message}`);
-    }
+      try {
+        resultPromise = handler(operation.variables);
+      } catch (error) {
+        throw new Error(`Unexpected error whilst calling request handler: ${error.message}`);
+      }
 
-    if (!isPromise(resultPromise)) {
-      throw new Error(`Request handler must return a promise. Received '${typeof resultPromise}'.`);
-    }
+      if (!isPromise(resultPromise)) {
+        throw new Error(`Request handler must return a promise. Received '${typeof resultPromise}'.`);
+      }
 
-    return new Observable<FetchResult>(observer => {
-      resultPromise!
+      resultPromise
         .then((result) => {
           observer.next(result);
           observer.complete();
@@ -52,29 +55,13 @@ export class MockLink extends ApolloLink {
         });
       return () => {};
     });
-  }
 }
 
-const getIdentifiers = (requestQuery: DocumentNode): [DocumentNode] | [DocumentNode, DocumentNode] => {
-  const withoutClientSets = hasDirectives(['client'], requestQuery)
-    ? removeClientSetsFromDocument(requestQuery)
-    : null;
-
-  return withoutClientSets === null
-    ? [requestQuery]
-    : [requestQuery, withoutClientSets];
-};
-
 const requestToKey = (query: DocumentNode): string => {
-  const queryString = print(query);
+  const queryString = query && print(query);
   const requestKey = { query: queryString };
   return JSON.stringify(requestKey);
 }
-
-const format = (query: DocumentNode | null): string =>
-  query
-    ? print(query)
-    : 'null';
 
 const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
   maybePromise && typeof (maybePromise as any).then === 'function';

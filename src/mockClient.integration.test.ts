@@ -66,6 +66,10 @@ describe('MockClient integration tests', () => {
   });
 
   describe('Client directives', () => {
+    // Note: React apollo 3 no longer passes @client directives down to the link (regardless of whether
+    // client-side resolvers have been configured).
+    // See https://github.com/apollographql/apollo-client/blob/master/CHANGELOG.md#apollo-client-300
+
     describe('Given entire query is client-side and client side resolvers exist', () => {
       const query = gql` { visibilityFilter @client }`;
 
@@ -87,12 +91,16 @@ describe('MockClient integration tests', () => {
         });
       });
 
-      it('warns when request handler is added', () => {
+      it('warns when request handler is added and does not handle request', async () => {
         mockClient.setRequestHandler(query, requestHandler);
 
         expect(console.warn).toBeCalledTimes(1);
-        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) and resolvers have been configured. ' +
-          'The request handler will not be called.');
+        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+
+        const result = await mockClient.query({ query });
+
+        expect(result.data).toEqual({ visibilityFilter: 'client resolver data' });
+        expect(requestHandler).not.toHaveBeenCalled();
       });
     });
 
@@ -113,15 +121,16 @@ describe('MockClient integration tests', () => {
         });
       });
 
-      it('does not warn when request handler is added and handles request', async () => {
+      it('warns when request handler is added and does not handle request', async () => {
         mockClient.setRequestHandler(query, requestHandler);
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).toBeCalledTimes(1);
+        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
 
         const result = await mockClient.query({ query });
 
-        expect(result.data).toEqual({ visibilityFilter: 'handler data' });
-        expect(requestHandler).toHaveBeenCalledTimes(1);
+        expect(result.data).toEqual({});
+        expect(requestHandler).not.toHaveBeenCalled();
       });
     });
 
