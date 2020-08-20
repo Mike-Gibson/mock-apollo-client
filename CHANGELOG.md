@@ -1,3 +1,18 @@
+# [1.0.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.0.0) (2020-08-20)
+
+### Features
+
+* **[Breaking Change]** Support `@apollo/client` v3 (drops support for `apollo-client` v2) [#16](https://github.com/Mike-Gibson/mock-apollo-client/pull/16)
+
+  If targeting Apollo Client 2, continue using 0.4.0.
+
+  Apollo Client 3 no longer passes `@client` directives down to links, so `mock-apollo-client` can no longer support queries which consist entirely of `@client` directives. `mock-apollo-client` will log a warning if a query handler is registered for a query which only contains `@client` directives.
+
+### Documentation
+
+* Updated Readme to reflect update to Apollo Client 3
+* Updated Readme examples to use hooks
+
 # [0.4.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v0.4.0) (2020-05-12)
 
 ### Features
