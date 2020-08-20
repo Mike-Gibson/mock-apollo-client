@@ -2,19 +2,21 @@
 
 Helps unit test components which use the Apollo Client.
 
-> **Note**: This library is currently only compatible with Apollo Client 2.
->
-> Track version 3 support in [#11](https://github.com/Mike-Gibson/mock-apollo-client/issues/11).
+# Versions
+
+Version 0.x of this library is compatible with Apollo client 2
+
+Version 1.x of this library is compatible with Apollo client 3
 
 ## Motivation
 
-Whilst using the impressive `react-apollo` library, I ran into issues while trying to unit test components which used the GraphQL `Query` and `Mutation` components. The `react-apollo` library includes a `MockedProvider` component which allows query and mutation results to be mocked, but didn't offer enough control within unit tests. The `react-apollo` documentation for testing can be found [here](https://www.apollographql.com/docs/react/recipes/testing).
+Whilst using the impressive `@apollo/client` library, I ran into issues while trying to unit test components which used the GraphQL `Query` and `Mutation` components. The Apollo client library includes a `MockedProvider` component which allows query and mutation results to be mocked, but didn't offer enough control within unit tests. The Apollo client documentation for testing can be found [here](https://www.apollographql.com/docs/react/development-testing/testing/).
 
 Specifically, some of the issues I faced were:
 
 - Unable to assert queries/mutations were called with the expected variables
 - Unable to assert how many times a specific query was called
-- Unable to change the query/mutation result after the `MockProvider` was initialised
+- Unable to change the query/mutation result after the `MockedProvider` was initialised
 - Unable to easily control the query/mutation loading state
 
 The `mock-apollo-client` library helps with the above issues, by allowing more control within unit tests.
@@ -25,24 +27,21 @@ The `mock-apollo-client` library helps with the above issues, by allowing more c
 npm install --save-dev mock-apollo-client
 ```
 
-Assuming `mock-apollo-client` is being used within unit tests and should be installed as a dev dependency.
-
 ## Usage
 
-The examples below use `react-apollo`, `enzyme` and `Jest`, but `mock-apollo-client` is standalone and can used with any libraries and test frameworks.
+The examples below use `React`, `enzyme` and `Jest`, but `mock-apollo-client` is standalone and can used with any libraries and test frameworks.
 
-The examples have been adapted from the official `react-apollo` testing docs and are written in TypeScript.
+The examples have been adapted from the official Apollo testing docs and are written in TypeScript.
 
 ### Simple Query Example
 
 Consider the file below, which contains a single GraphQL query and a component which is responsible for rendering the result of the query:
 
 ```tsx
-// dog.ts
+// dog.tsx
 
-import * as React from 'react';
-import gql from 'graphql-tag';
-import { Query } from 'react-apollo';
+import { gql, useQuery } from '@apollo/client';
+import React from 'react';
 
 export const GET_DOG_QUERY = gql`
   query getDog($name: String) {
@@ -54,31 +53,31 @@ export const GET_DOG_QUERY = gql`
   }
 `;
 
-export const Dog = ({ name }) => (
-  <Query query={GET_DOG_QUERY} variables={{ name }}>
-    {({ loading, error, data }) => {
-      if (loading) return 'Loading...';
-      if (error) return 'Error!';
+export const Dog: React.FunctionComponent<{ name: string }> = ({ name }) => {
+  const { loading, error, data } = useQuery(
+    GET_DOG_QUERY,
+    { variables: { name } }
+  );
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error!</p>;
 
-      return (
-        <p>
-          {data.dog.name} is a {data.dog.breed}
-        </p>
-      );
-    }}
-  </Query>
-);
+  return (
+    <p>
+      {data.dog.name} is a {data.dog.breed}
+    </p>
+  );
+};
 ```
 
 To unit test this component using `mock-apollo-client`, the test file could look like the following:
 
 ```tsx
-// dog.test.ts
+// dog.test.tsx
 
+import { ApolloProvider } from '@apollo/client';
 import { mount, ReactWrapper } from 'enzyme';
-import * as React from 'react';
-import { ApolloProvider } from 'react-apollo';
 import { createMockClient } from 'mock-apollo-client';
+import * as React from 'react';
 
 import { GET_DOG_QUERY, Dog } from './dog';
 
@@ -111,7 +110,7 @@ This test file does the following:
 
 ### Asserting query variables
 
-The method `setRequestHandler` is passed a function to call when Apollo client executes a given query and it is called with the variables for that query, so it is easy to assert the component is behaving as expected using a spy framework.
+The method `setRequestHandler` is passed a function to call when Apollo client executes a given query and it is called with the variables for that query, so it is easy to assert the component is behaving as expected using a spy library.
 
 ```typescript
 const queryHandler = jest.fn().mockResolvedValue({ data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } } });
@@ -145,7 +144,7 @@ To simulate GraphQL errors, the request handler should return a Promise which re
 ```typescript
 mockApolloClient.setRequestHandler(
   GET_DOG_QUERY,
-  () => Promise.resolve({ errors: [{message: 'GraphQL Error'}] }));
+  () => Promise.resolve({ errors: [{ message: 'GraphQL Error' }] }));
 ```
 
 ### Mutations
@@ -156,13 +155,13 @@ Mutations can be tested the same way that queries are, by using `setRequestHandl
 
 The `createMockClient` method can be provided with the same constructor arguments that `ApolloClient` accepts which are used when instantiating the mock Apollo client.
 
-For example, to specify the cache (and fragment matcher) that should be used:
+For example, to specify the cache (and possible types for fragment matching) that should be used:
 ```typescript
 const cache = new InMemoryCache({
-  fragmentMatcher: myCustomFragmentMatcher,
+  possibleTypes: myPossibleTypes,
 });
 
 const mockClient = createMockClient({ cache });
 ```
 
-Note: it is not possible to specify the `link` to use as this is how Mock Apollo Client injects its behaviour.
+Note: it is not possible to specify the `link` to use as this is how `mock-apollo-client` injects its behaviour.
