@@ -207,15 +207,16 @@ describe('class MockLink', () => {
         expect(complete).toBeCalledTimes(1);
       });
 
-      it('correctly executes the handler when query is mixed and there are client resolvers', async () => {
-        const mixedQuery = gql`query Two {a @client b}`;
-        const queryWithoutClientDirectives = gql`query Two {b}`;
-
+      it.each`
+      description | initialQuery | processedQuery
+      ${'query is mixed and there are client resolvers'} | ${gql`query Two {a @client b}`} | ${gql`query Two {b}`}
+      ${'query contains a @connection directive'} | ${gql`query Two {items @connection(key: "foo") { a b }}`} | ${gql`query Two {items { a b }}`}
+      `('correctly executes the handler when $description', async ({ initialQuery, processedQuery }) => {
         const handler = jest.fn().mockResolvedValue({ data: 'Query result' });
-        mockLink.setRequestHandler(mixedQuery, handler);
+        mockLink.setRequestHandler(initialQuery, handler);
 
-        // When there are client resolvers, client directives are removed before being passed down to the link
-        const queryOperation = { query: queryWithoutClientDirectives, variables: { a: 'one'} } as Partial<Operation> as Operation;
+        // Client and connection directives are removed before being passed down to the link
+        const queryOperation = { query: processedQuery, variables: { a: 'one'} } as Partial<Operation> as Operation;
 
         const observer = mockLink.request(queryOperation);
 
