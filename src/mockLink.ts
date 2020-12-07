@@ -1,5 +1,5 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
-import { hasDirectives, removeClientSetsFromDocument } from 'apollo-utilities';
+import { hasDirectives, removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from 'apollo-utilities';
 import { print } from 'graphql/language/printer';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
 
@@ -56,13 +56,18 @@ export class MockLink extends ApolloLink {
 }
 
 const getIdentifiers = (requestQuery: DocumentNode): [DocumentNode] | [DocumentNode, DocumentNode] => {
-  const withoutClientSets = hasDirectives(['client'], requestQuery)
-    ? removeClientSetsFromDocument(requestQuery)
+  if (!hasDirectives(['client', 'connection'], requestQuery)) {
+    return [requestQuery];
+  }
+
+  let withoutDirectives = removeClientSetsFromDocument(requestQuery)
+  withoutDirectives = withoutDirectives !== null
+    ? removeConnectionDirectiveFromDocument(withoutDirectives)
     : null;
 
-  return withoutClientSets === null
+  return withoutDirectives === null
     ? [requestQuery]
-    : [requestQuery, withoutClientSets];
+    : [requestQuery, withoutDirectives];
 };
 
 const requestToKey = (query: DocumentNode): string => {
