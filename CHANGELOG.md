@@ -1,3 +1,9 @@
+# [0.5.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v0.5.0) (2020-12-07)
+
+### Features
+
+* Strip `@connection` directive from identifiers [#20](https://github.com/Mike-Gibson/mock-apollo-client/pull/20)
+
 # [0.4.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v0.4.0) (2020-05-12)
 
 ### Features
