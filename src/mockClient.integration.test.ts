@@ -65,7 +65,7 @@ describe('MockClient integration tests', () => {
     });
   });
 
-  describe('Client directives', () => {
+  describe('@client directives', () => {
     // Note: React apollo 3 no longer passes @client directives down to the link (regardless of whether
     // client-side resolvers have been configured).
     // See https://github.com/apollographql/apollo-client/blob/master/CHANGELOG.md#apollo-client-300
@@ -203,6 +203,20 @@ describe('MockClient integration tests', () => {
         expect(result.data).toEqual({ user: { id: 1, name: 'bob', isLoggedIn: false } });
         expect(requestHandler).toBeCalledTimes(1);
       });
+    });
+  });
+
+  describe('@connection directives', () => {
+    const query = gql`query One {one @connection(key: "foo")}`;
+
+    it('correctly handles a query containing a @connection directive', async () => {
+      mockClient = createMockClient();
+      const requestHandler = jest.fn().mockResolvedValue({ data: { one: 'one' } });
+      mockClient.setRequestHandler(query, requestHandler);
+
+      const result = await mockClient.query({ query });
+
+      expect(result.data).toEqual({ one: 'one' });
     });
   });
 });

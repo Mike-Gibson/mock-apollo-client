@@ -1,20 +1,22 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from '@apollo/client/core';
 import { print } from 'graphql';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
-import { removeClientSetsFromDocument } from '@apollo/client/utilities';
+import { removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from '@apollo/client/utilities';
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler | undefined> = {};
 
   setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
-    const queryWithoutClientDirectives = removeClientSetsFromDocument(requestQuery);
+    let strippedQuery = removeClientSetsFromDocument(requestQuery);
 
-    if (queryWithoutClientDirectives === null) {
+    if (strippedQuery === null) {
       console.warn('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
       return;
     }
 
-    const key = requestToKey(queryWithoutClientDirectives);
+    strippedQuery = removeConnectionDirectiveFromDocument(strippedQuery)!;
+
+    const key = requestToKey(strippedQuery);
 
     if (this.requestHandlers[key]) {
       throw new Error(`Request handler already defined for query: ${print(requestQuery)}`);

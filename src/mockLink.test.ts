@@ -67,6 +67,37 @@ describe('class MockLink', () => {
         expect(console.warn).not.toBeCalled();
       });
     });
+
+    describe('when queries contain a @connection directive', () => {
+      const connectionDirectiveQuery = gql`query One {one @connection(key: "foo")}`;
+      const queryWithoutConnectionDirective = gql`query One {one}`;
+      const anotherConnectionDirectiveQuery = gql`query Two {two @connection(key: "foo")}`;
+
+      it('throws when a handler has already been defined for a query', () => {
+        mockLink.setRequestHandler(connectionDirectiveQuery, () => Promise.resolve({ data: {} }));
+
+        expect(() => mockLink.setRequestHandler(connectionDirectiveQuery, () => <any>{}))
+          .toThrow('Request handler already defined for query');
+
+        expect(console.warn).not.toBeCalled();
+      });
+
+      it('throws when a handler has already been defined for an equivalent query without the @connection directive', () => {
+        mockLink.setRequestHandler(queryWithoutConnectionDirective, () => Promise.resolve({ data: {} }));
+
+        expect(() => mockLink.setRequestHandler(connectionDirectiveQuery, () => <any>{}))
+          .toThrow('Request handler already defined for query');
+
+        expect(console.warn).not.toBeCalled();
+      });
+
+      it('does not throw when two handlers are added for two different queries with @connection directives', () => {
+        expect(() => {
+          mockLink.setRequestHandler(connectionDirectiveQuery, () => Promise.resolve({ data: {} }));
+          mockLink.setRequestHandler(anotherConnectionDirectiveQuery, () => Promise.resolve({ data: {} }));
+        }).not.toThrow();
+      });
+    });
   });
 
   describe('method request', () => {
@@ -117,7 +148,7 @@ describe('class MockLink', () => {
       const handler = jest.fn().mockRejectedValue('Test error');
       mockLink.setRequestHandler(queryOne, handler);
       const observer = createMockObserver();
-      
+
       const observerable = mockLink.request(queryOneOperation);
 
       observerable.subscribe(observer);
