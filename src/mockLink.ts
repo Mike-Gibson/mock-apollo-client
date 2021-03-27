@@ -1,6 +1,5 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
 import { removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from 'apollo-utilities';
-import { SelectionNode } from 'graphql';
 import { print } from 'graphql/language/printer';
 import { visit } from 'graphql/language/visitor';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
@@ -69,59 +68,16 @@ const normalise = (requestQuery: DocumentNode): DocumentNode => {
     : stripped;
 };
 
-const stripTypenames = (document: DocumentNode): DocumentNode | null => {
-  const removeTypenameFields = (selections: readonly SelectionNode[]): SelectionNode[] => {
-    const stripped = selections.reduce<SelectionNode[]>(
-      (acc, current) => {
-        let selectionToAdd: SelectionNode | null = current;
-
-        if (current.kind === 'Field' || current.kind === 'FragmentSpread') {
-          if (current.name.value === '__typename') {
-            selectionToAdd = null;
-          }
-        }
-
-        if (current.kind === 'InlineFragment') {
-          const strippedSelections = removeTypenameFields(current.selectionSet.selections);
-          selectionToAdd = {
-            ...current,
-            selectionSet: {
-              ...current.selectionSet,
-              selections: strippedSelections,
-            },
-          };
-        }
-
-        if (selectionToAdd !== null) {
-          acc.push(selectionToAdd);
-        }
-
-        return acc;
-      },
-      []);
-
-    return stripped;
-  };
-
-  return visit(
+const stripTypenames = (document: DocumentNode): DocumentNode | null =>
+  visit(
     document,
     {
-      SelectionSet: {
-        enter: (node) => {
-          if (!node.selections || node.selections.length === 0) {
-            return;
-          }
-
-          const strippedSelections = removeTypenameFields(node.selections);
-
-          return {
-            ...node,
-            selections: strippedSelections,
-          };
-        },
+      Field: {
+        enter: (node) => node.name.value === '__typename'
+          ? null
+          : undefined,
       },
     });
-}
 
 const requestToKey = (query: DocumentNode): string => {
   const normalised = normalise(query);
