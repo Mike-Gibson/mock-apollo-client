@@ -1,3 +1,4 @@
+import { InMemoryCache } from 'apollo-cache-inmemory';
 import { ApolloQueryResult } from 'apollo-client';
 import gql from 'graphql-tag';
 
@@ -10,7 +11,12 @@ describe('MockClient integration tests', () => {
   let mockClient: MockApolloClient;
 
   beforeEach(() => {
-    jest.spyOn(console, 'warn')
+    jest
+      .spyOn(console, 'warn')
+      .mockReset();
+
+    jest
+      .spyOn(console, 'error')
       .mockReset();
   });
 
@@ -143,7 +149,7 @@ describe('MockClient integration tests', () => {
         mockClient = createMockClient({
           resolvers: {
             Query: {
-              user: () => ({ isLoggedIn: true }),
+              user: () => ({ isLoggedIn: true, wtf: 'yes' }),
             },
           },
         });
@@ -157,7 +163,6 @@ describe('MockClient integration tests', () => {
         expect(console.warn).not.toBeCalled();
 
         const result = await mockClient.query({ query });
-
         expect(result.data).toEqual({ user: { id: 1, name: 'bob', isLoggedIn: true } });
         expect(requestHandler).toBeCalledTimes(1);
         expect(console.warn).not.toBeCalled();
@@ -194,6 +199,97 @@ describe('MockClient integration tests', () => {
 
         expect(result.data).toEqual({ user: { id: 1, name: 'bob', isLoggedIn: false } });
         expect(requestHandler).toBeCalledTimes(1);
+      });
+    });
+  });
+
+  describe('Fragments', () => {
+    describe('Given cache has addTypename enabled and query contains a fragment spread', () => {
+      const query = gql`
+        query User {
+          user {
+            ...UserDetails
+          }
+        }
+        fragment UserDetails on User {
+          id
+          name
+        }
+      `;
+
+      let requestHandler: jest.Mock;
+
+      beforeEach(() => {
+        mockClient = createMockClient({
+          cache: new InMemoryCache({
+            addTypename: true,
+          }),
+        });
+
+        requestHandler = jest.fn().mockResolvedValue({ data: { user: { __typename: 'User', id: 1, name: 'Bob' } } });
+      });
+
+      it('does not warn or error when request handler is added and request is handled', async () => {
+        mockClient.setRequestHandler(query, requestHandler);
+
+        expect(console.warn).not.toBeCalled();
+        expect(console.error).not.toBeCalled();
+
+        const result = await mockClient.query({ query });
+
+        expect(result.data).toEqual({ user: { __typename: 'User', id: 1, name: 'Bob' } });
+        expect(requestHandler).toBeCalledTimes(1);
+
+        expect(console.warn).not.toBeCalled();
+        expect(console.error).not.toBeCalled();
+      });
+    });
+
+    describe('Given cache has addTypename enabled, with fragment matcher defined and query contains an inline fragment for a union type', () => {
+      const query = gql`
+        query Hardware {
+          hardware {
+            id
+            ... on Memory {
+              size
+            }
+            ... on Cpu {
+              speed
+            }
+          }
+        }
+      `;
+
+      let requestHandler: jest.Mock;
+
+      beforeEach(() => {
+        mockClient = createMockClient({
+          cache: new InMemoryCache({
+            addTypename: true,
+            fragmentMatcher: {
+              match: (_id, typeCondition, _context) => {
+                return typeCondition === 'Memory';
+              },
+            },
+          }),
+        });
+
+        requestHandler = jest.fn().mockResolvedValue({ data: { hardware: { __typename: 'Memory', id: 2, size: '16gb', speed: 'fast', brand: 'Samsung' } } });
+      });
+
+      it('does not warn or error when request handler is added and request is handled', async () => {
+        mockClient.setRequestHandler(query, requestHandler);
+
+        expect(console.warn).not.toBeCalled();
+        expect(console.error).not.toBeCalled();
+
+        const result = await mockClient.query({ query });
+
+        expect(result.data).toEqual({ hardware: { __typename: 'Memory', id: 2, size: '16gb' } });
+        expect(requestHandler).toBeCalledTimes(1);
+
+        expect(console.warn).not.toBeCalled();
+        expect(console.error).not.toBeCalled();
       });
     });
   });

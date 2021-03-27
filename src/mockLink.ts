@@ -1,23 +1,21 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from 'apollo-link';
-import { hasDirectives, removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from 'apollo-utilities';
+import { removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from 'apollo-utilities';
+import { SelectionNode } from 'graphql';
 import { print } from 'graphql/language/printer';
+import { visit } from 'graphql/language/visitor';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler> = {};
 
   setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
-    const identifiers = getIdentifiers(requestQuery);
+    const key = requestToKey(requestQuery);
 
-    for (const identifier of identifiers) {
-      const key = requestToKey(identifier);
-
-      if (this.requestHandlers[key]) {
-        throw new Error(`Request handler already defined for query: ${format(identifier)}`);
-      }
-
-      this.requestHandlers[key] = handler;
+    if (this.requestHandlers[key]) {
+      throw new Error(`Request handler already defined for query: ${format(requestQuery)}`);
     }
+
+    this.requestHandlers[key] = handler;
   }
 
   request(operation: Operation) {
@@ -50,28 +48,84 @@ export class MockLink extends ApolloLink {
         .catch((error) => {
           observer.error(error);
         });
-      return () => {};
+      return () => { };
     });
   }
 }
 
-const getIdentifiers = (requestQuery: DocumentNode): [DocumentNode] | [DocumentNode, DocumentNode] => {
-  if (!hasDirectives(['client', 'connection'], requestQuery)) {
-    return [requestQuery];
-  }
+const normalise = (requestQuery: DocumentNode): DocumentNode => {
+  let stripped = removeClientSetsFromDocument(requestQuery);
 
-  let withoutDirectives = removeClientSetsFromDocument(requestQuery)
-  withoutDirectives = withoutDirectives !== null
-    ? removeConnectionDirectiveFromDocument(withoutDirectives)
+  stripped = stripped !== null
+    ? removeConnectionDirectiveFromDocument(stripped)
     : null;
 
-  return withoutDirectives === null
-    ? [requestQuery]
-    : [requestQuery, withoutDirectives];
+  stripped = stripped !== null
+    ? stripTypenames(stripped)
+    : null;
+
+  return stripped === null
+    ? requestQuery
+    : stripped;
 };
 
+const stripTypenames = (document: DocumentNode): DocumentNode | null => {
+  const removeTypenameFields = (selections: readonly SelectionNode[]): SelectionNode[] => {
+    const stripped = selections.reduce<SelectionNode[]>(
+      (acc, current) => {
+        let selectionToAdd: SelectionNode | null = current;
+
+        if (current.kind === 'Field' || current.kind === 'FragmentSpread') {
+          if (current.name.value === '__typename') {
+            selectionToAdd = null;
+          }
+        }
+
+        if (current.kind === 'InlineFragment') {
+          const strippedSelections = removeTypenameFields(current.selectionSet.selections);
+          selectionToAdd = {
+            ...current,
+            selectionSet: {
+              ...current.selectionSet,
+              selections: strippedSelections,
+            },
+          };
+        }
+
+        if (selectionToAdd !== null) {
+          acc.push(selectionToAdd);
+        }
+
+        return acc;
+      },
+      []);
+
+    return stripped;
+  };
+
+  return visit(
+    document,
+    {
+      SelectionSet: {
+        enter: (node) => {
+          if (!node.selections || node.selections.length === 0) {
+            return;
+          }
+
+          const strippedSelections = removeTypenameFields(node.selections);
+
+          return {
+            ...node,
+            selections: strippedSelections,
+          };
+        },
+      },
+    });
+}
+
 const requestToKey = (query: DocumentNode): string => {
-  const queryString = print(query);
+  const normalised = normalise(query);
+  const queryString = print(normalised);
   const requestKey = { query: queryString };
   return JSON.stringify(requestKey);
 }
