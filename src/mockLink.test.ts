@@ -2,6 +2,7 @@ import { gql, Operation, Observer } from '@apollo/client/core';
 import { print } from 'graphql';
 
 import { MockLink } from './mockLink';
+import { createMockSubscription } from './mockSubscription';
 
 describe('class MockLink', () => {
   let mockLink: MockLink;
@@ -166,5 +167,54 @@ describe('class MockLink', () => {
       expect(observer.error).toBeCalledWith(new Error('Unexpected error whilst calling request handler: Error in handler'));
       expect(observer.complete).not.toBeCalled();
     });
+
+    it('correctly executes the handler on subscription data', async () => {
+      const subscription = createMockSubscription()
+      const handler = jest.fn().mockReturnValue(subscription);
+      mockLink.setRequestHandler(queryOne, handler);
+      const observer = createMockObserver();
+
+      const observerable = mockLink.request(queryOneOperation);
+
+      observerable.subscribe(observer);
+
+      subscription.next({ data: 'Query one result' })
+      subscription.next({ data: 'Query one result' })
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(handler).toBeCalledTimes(1);
+      expect(handler).toBeCalledWith({ a: 'one' });
+
+      expect(observer.next).toBeCalledTimes(2);
+      expect(observer.next).toBeCalledWith({ data: 'Query one result' });
+      expect(observer.error).not.toBeCalled();
+      expect(observer.complete).not.toBeCalledTimes(1);
+    })
+
+    it('correctly executes the handler on subscription error', async () => {
+      const subscription = createMockSubscription()
+      const handler = jest.fn().mockReturnValue(subscription);
+      mockLink.setRequestHandler(queryOne, handler);
+      const observer = createMockObserver();
+
+      const observerable = mockLink.request(queryOneOperation);
+
+      observerable.subscribe(observer);
+
+      subscription.error('Test error')
+      subscription.error('Test error')
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(handler).toBeCalledTimes(1);
+      expect(handler).toBeCalledWith({ a: 'one' });
+
+      expect(observer.next).not.toBeCalled();
+      expect(observer.error).toBeCalledTimes(1);
+      expect(observer.error).toBeCalledWith('Test error');
+      expect(observer.complete).not.toBeCalled();
+      expect(subscription.closed).toBeTruthy()
+    })
   });
 });

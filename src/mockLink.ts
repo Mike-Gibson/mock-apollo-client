@@ -2,6 +2,7 @@ import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from '@a
 import { print } from 'graphql';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
 import { removeClientSetsFromDocument } from '@apollo/client/utilities';
+import { MockSubscription } from './mockSubscription';
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler | undefined> = {};
@@ -33,19 +34,19 @@ export class MockLink extends ApolloLink {
         throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
       }
 
-      let resultPromise: Promise<RequestHandlerResponse<any>> | undefined = undefined;
+      let result:
+      | Promise<RequestHandlerResponse<any>>
+      | MockSubscription<any>
+      | undefined = undefined;
 
       try {
-        resultPromise = handler(operation.variables);
+        result = handler(operation.variables);
       } catch (error) {
         throw new Error(`Unexpected error whilst calling request handler: ${error.message}`);
       }
 
-      if (!isPromise(resultPromise)) {
-        throw new Error(`Request handler must return a promise. Received '${typeof resultPromise}'.`);
-      }
-
-      resultPromise
+      if (isPromise(result)) {
+        result
         .then((result) => {
           observer.next(result);
           observer.complete();
@@ -53,6 +54,12 @@ export class MockLink extends ApolloLink {
         .catch((error) => {
           observer.error(error);
         });
+      } else if (isSubscription(result)) {
+        result.subscribe(observer)
+      } else {
+        throw new Error(`Request handler must return a promise. Received '${typeof result}'.`);
+      }
+   
       return () => {};
     });
 }
@@ -65,3 +72,6 @@ const requestToKey = (query: DocumentNode): string => {
 
 const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
   maybePromise && typeof (maybePromise as any).then === 'function';
+
+const isSubscription = (maybeSubscription: any): maybeSubscription is MockSubscription<any> => 
+  maybeSubscription && typeof (maybeSubscription as any).next === 'function';
