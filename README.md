@@ -2,9 +2,11 @@
 
 Helps unit test components which use the Apollo Client.
 
-> **Note**: This library is currently only compatible with Apollo Client 2.
->
-> Track version 3 support in [#11](https://github.com/Mike-Gibson/mock-apollo-client/issues/11).
+# Versions
+
+Version 0.x of this library is compatible with Apollo client 2
+
+Version 1.x of this library is compatible with Apollo client 3
 
 ## Motivation
 
@@ -166,3 +168,52 @@ const mockClient = createMockClient({ cache });
 ```
 
 Note: it is not possible to specify the `link` to use as this is how Mock Apollo Client injects its behaviour.
+
+### Fragments
+
+If your queries or mutations use fragments, you must inject a cache object when creating the mock client which has been provided the fragment matcher and configured to add typenames.
+
+For example, when using the IntrospectionFragmentMatcher:
+
+```typescript
+import { IntrospectionFragmentMatcher, InMemoryCache } from 'apollo-cache-inmemory';
+import { createMockClient } from 'mock-apollo-client';
+import introspectionQueryResultData from './fragmentTypes.json';
+
+const cache = new InMemoryCache({
+  addTypename: true,
+  fragmentMatcher: new IntrospectionFragmentMatcher({
+    introspectionQueryResultData,
+  }),
+});
+
+const mockClient = createMockClient({ cache });
+```
+
+You must then ensure that the query result includes the `__typename` field as it would when calling your actual GraphQL API. This is to ensure that the fragment matching works as expected:
+
+```typescript
+const query = gql`
+  query Hardware {
+    hardware {
+      id
+      ... on Memory {
+        size
+      }
+      ... on Cpu {
+        speed
+      }
+    }
+  }
+`;
+
+const mockData = {
+  hardware: {
+    __typename: 'Memory',
+    id: 2,
+    size: '16gb',
+  },
+};
+
+const requestHandler = jest.fn().mockResolvedValue({ data: mockData });
+```
