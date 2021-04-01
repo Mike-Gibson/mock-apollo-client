@@ -2,11 +2,17 @@
 
 Helps unit test components which use the Apollo Client.
 
-# Versions
+## Versions
 
 Version 0.x of this library is compatible with Apollo client 2
+```bash
+npm install --save-dev mock-apollo-client@apollo2
+```
 
 Version 1.x of this library is compatible with Apollo client 3
+```bash
+npm install --save-dev mock-apollo-client
+```
 
 ## Motivation
 
@@ -24,7 +30,7 @@ The `mock-apollo-client` library helps with the above issues, by allowing more c
 ## Installation
 
 ```bash
-npm install --save-dev mock-apollo-client
+npm install --save-dev mock-apollo-client@apollo2
 ```
 
 Assuming `mock-apollo-client` is being used within unit tests and should be installed as a dev dependency.
