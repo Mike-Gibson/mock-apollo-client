@@ -2,11 +2,12 @@
 
 Helps unit test components which use the Apollo Client.
 
-# Versions
+## Versions
 
-Version 0.x of this library is compatible with Apollo client 2
+Version 0.x of this library is compatible with Apollo client 2.
+View the README for 0.x [here](https://github.com/Mike-Gibson/mock-apollo-client/tree/release/0.x).
 
-Version 1.x of this library is compatible with Apollo client 3
+Version 1.x of this library is compatible with Apollo client 3 (this README)
 
 ## Motivation
 
