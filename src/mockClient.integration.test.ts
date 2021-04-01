@@ -149,7 +149,7 @@ describe('MockClient integration tests', () => {
         mockClient = createMockClient({
           resolvers: {
             Query: {
-              user: () => ({ isLoggedIn: true, wtf: 'yes' }),
+              user: () => ({ isLoggedIn: true }),
             },
           },
         });
@@ -163,6 +163,7 @@ describe('MockClient integration tests', () => {
         expect(console.warn).not.toBeCalled();
 
         const result = await mockClient.query({ query });
+
         expect(result.data).toEqual({ user: { id: 1, name: 'bob', isLoggedIn: true } });
         expect(requestHandler).toBeCalledTimes(1);
         expect(console.warn).not.toBeCalled();
