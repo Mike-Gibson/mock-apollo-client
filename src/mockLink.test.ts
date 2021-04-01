@@ -72,6 +72,16 @@ describe('class MockLink', () => {
         }).not.toThrow();
       });
     });
+
+    describe('when queries contain __typename field', () => {
+      it('does not throw when adding query', () => {
+        const query = gql`query Person { __typename name }`;
+
+        expect(() => {
+          mockLink.setRequestHandler(query, jest.fn());
+        }).not.toThrow();
+      });
+    });
   });
 
   describe('method request', () => {
@@ -233,6 +243,36 @@ describe('class MockLink', () => {
 
         expect(next).toBeCalledTimes(1);
         expect(next).toBeCalledWith({ data: 'Query result' });
+        expect(error).not.toBeCalled();
+        expect(complete).toBeCalledTimes(1);
+      });
+    });
+
+    describe('when query contains __typename field', () => {
+      it('correctly executes the handler', async () => {
+        const personQueryWithTypename = gql`query Person { __typename name}`;
+        const personQueryWithoutTypename = gql`query Person { name}`;
+
+        const handler = jest.fn().mockResolvedValue({ data: { __typename: 'Person', name: 'Bob' } });
+        mockLink.setRequestHandler(personQueryWithoutTypename, handler);
+
+        const queryOperation = { query: personQueryWithTypename } as Partial<Operation> as Operation;
+
+        const observer = mockLink.request(queryOperation);
+
+        const next = jest.fn();
+        const error = jest.fn();
+        const complete = jest.fn();
+
+        observer.subscribe(next, error, complete);
+
+        await new Promise(r => setTimeout(r, 0));
+
+        expect(handler).toBeCalledTimes(1);
+        expect(handler).toBeCalledWith(undefined);
+
+        expect(next).toBeCalledTimes(1);
+        expect(next).toBeCalledWith({ data: { __typename: 'Person', name: 'Bob' } });
         expect(error).not.toBeCalled();
         expect(complete).toBeCalledTimes(1);
       });
