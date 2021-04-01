@@ -1,3 +1,9 @@
+# [0.6.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v0.6.0) (2021-04-01)
+
+### Features
+
+* Handle fragments [#24](https://github.com/Mike-Gibson/mock-apollo-client/issues/24)
+
 # [0.5.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v0.5.0) (2020-12-07)
 
 ### Features
