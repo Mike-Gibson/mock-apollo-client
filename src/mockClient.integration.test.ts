@@ -293,5 +293,106 @@ describe('MockClient integration tests', () => {
         expect(console.error).not.toBeCalled();
       });
     });
+
+    describe('Given cache has addTypename enabled and mutation contains a fragment spread', () => {
+      const mutation = gql`
+        mutation AddUser($name: String!) {
+          addUser(name: $name) {
+            ...UserDetails
+          }
+        }
+        fragment UserDetails on User {
+          id
+          name
+        }
+      `;
+
+      let requestHandler: jest.Mock;
+
+      beforeEach(() => {
+        mockClient = createMockClient({
+          cache: new InMemoryCache({
+            addTypename: true,
+          }),
+        });
+
+        requestHandler = jest.fn().mockResolvedValue({ data: { addUser: { __typename: 'User', id: 7, name: 'Barry' } } });
+      });
+
+      it('does not warn or error when request handler is added and request is handled', async () => {
+        mockClient.setRequestHandler(mutation, requestHandler);
+
+        expect(console.warn).not.toBeCalled();
+        expect(console.error).not.toBeCalled();
+
+        const result = await mockClient.mutate({ mutation, variables: { name: 'Barry' } });
+
+        expect(result.data).toEqual({ addUser: { __typename: 'User', id: 7, name: 'Barry' } });
+        expect(requestHandler).toBeCalledTimes(1);
+        expect(requestHandler).toBeCalledWith({ name: 'Barry' });
+
+        expect(console.warn).not.toBeCalled();
+        expect(console.error).not.toBeCalled();
+      });
+    });
+
+    describe('Given cache has addTypename enabled, with fragment matcher defined and mutation contains an inline fragment for a union type', () => {
+      const mutation = gql`
+        mutation UpdateHardware($id: String!, $quantity: Int!) {
+          updateHardware(id: $id, quantity: $quantity) {
+            id
+            quantity
+            ... on Memory {
+              size
+            }
+            ... on Cpu {
+              speed
+            }
+          }
+        }
+      `;
+
+      let requestHandler: jest.Mock;
+
+      beforeEach(() => {
+        mockClient = createMockClient({
+          cache: new InMemoryCache({
+            addTypename: true,
+            fragmentMatcher: {
+              match: (_id, typeCondition, _context) => {
+                return typeCondition === 'Memory';
+              },
+            },
+          }),
+        });
+
+        requestHandler = jest.fn().mockResolvedValue({
+          data: {
+            updateHardware: {
+              __typename: 'Memory',
+              id: 2,
+              quantity: 7,
+              size: '16gb',
+            },
+          },
+        });
+      });
+
+      it('does not warn or error when request handler is added and request is handled', async () => {
+        mockClient.setRequestHandler(mutation, requestHandler);
+
+        expect(console.warn).not.toBeCalled();
+        expect(console.error).not.toBeCalled();
+
+        const result = await mockClient.mutate({ mutation, variables: { id: 2, quantity: 7 } });
+        expect(requestHandler).toBeCalledWith({ id: 2, quantity: 7 });
+
+        expect(result.data).toEqual({ updateHardware: { __typename: 'Memory', id: 2, quantity: 7, size: '16gb' } });
+        expect(requestHandler).toBeCalledTimes(1);
+
+        expect(console.warn).not.toBeCalled();
+        expect(console.error).not.toBeCalled();
+      });
+    });
   });
 });
