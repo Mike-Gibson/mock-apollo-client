@@ -4,11 +4,13 @@ import { MockLink } from './mockLink';
 import { MockSubscription } from './mockSubscription';
 
 export type RequestHandler<TData = any, TVariables = any> =
-  (variables: TVariables) => 
-  | Promise<RequestHandlerResponse<TData>> 
+  (variables: TVariables) =>
+  | Promise<RequestHandlerResponse<TData>>
   | MockSubscription<TData>;
 
-export type RequestHandlerResponse<T> = { data: T, errors?: any[] };
+export type RequestHandlerResponse<T> =
+  | { data: T }
+  | { errors: any[] };
 
 export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
   { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };

@@ -24,20 +24,20 @@ export class MockLink extends ApolloLink {
     this.requestHandlers[key] = handler;
   }
 
-  request = (operation: Operation) =>
-    new Observable<FetchResult>(observer => {
-      const key = requestToKey(operation.query);
+  request = (operation: Operation) => {
+    const key = requestToKey(operation.query);
 
-      const handler = this.requestHandlers[key];
+    const handler = this.requestHandlers[key];
 
-      if (!handler) {
-        throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
-      }
+    if (!handler) {
+      throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
+    }
 
+    return new Observable<FetchResult>(observer => {
       let result:
-      | Promise<RequestHandlerResponse<any>>
-      | MockSubscription<any>
-      | undefined = undefined;
+        | Promise<RequestHandlerResponse<any>>
+        | MockSubscription<any>
+        | undefined = undefined;
 
       try {
         result = handler(operation.variables);
@@ -47,21 +47,22 @@ export class MockLink extends ApolloLink {
 
       if (isPromise(result)) {
         result
-        .then((result) => {
-          observer.next(result);
-          observer.complete();
-        })
-        .catch((error) => {
-          observer.error(error);
-        });
+          .then((result) => {
+            observer.next(result);
+            observer.complete();
+          })
+          .catch((error) => {
+            observer.error(error);
+          });
       } else if (isSubscription(result)) {
         result.subscribe(observer)
       } else {
-        throw new Error(`Request handler must return a promise. Received '${typeof result}'.`);
+        throw new Error(`Request handler must return a promise or subscription. Received '${typeof result}'.`);
       }
-   
-      return () => {};
+
+      return () => { };
     });
+  };
 }
 
 const requestToKey = (query: DocumentNode): string => {
@@ -73,5 +74,5 @@ const requestToKey = (query: DocumentNode): string => {
 const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
   maybePromise && typeof (maybePromise as any).then === 'function';
 
-const isSubscription = (maybeSubscription: any): maybeSubscription is MockSubscription<any> => 
+const isSubscription = (maybeSubscription: any): maybeSubscription is MockSubscription<any> =>
   maybeSubscription && typeof (maybeSubscription as any).next === 'function';
