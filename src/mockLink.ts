@@ -75,4 +75,4 @@ const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
   maybePromise && typeof (maybePromise as any).then === 'function';
 
 const isSubscription = (maybeSubscription: any): maybeSubscription is MockSubscription<any> =>
-  maybeSubscription && typeof (maybeSubscription as any).next === 'function';
+  maybeSubscription && maybeSubscription instanceof MockSubscription;

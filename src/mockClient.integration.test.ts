@@ -204,7 +204,7 @@ describe('MockClient integration tests', () => {
     const queryOne = gql`query One {one}`;
     const queryTwo = gql`query Two {two}`;
 
-    let mockSubscription: MockSubscription<{ one: string }>;
+    let mockSubscription: IMockSubscription<{ one: string }>;
     let requestHandler: jest.Mock;
 
     beforeEach(() => {
