@@ -151,6 +151,103 @@ mockApolloClient.setRequestHandler(
 
 Mutations can be tested the same way that queries are, by using `setRequestHandler` and specifying a request handler for the mutation query.
 
+### Subscriptions
+
+Subscriptions can be tested, but require a different setup due to their async nature. 
+Consider the file below, which contains a single subscription and a component which is responsible for rendering the updated data:
+```tsx
+// dog.tsx
+
+import { gql, useSubscription } from '@apollo/client';
+import React from 'react';
+
+export const SUBSCRIBE_DOG_DOCUMENT = gql`
+  subscription subscribeDog($name: String) {
+    dog(name: $name) {
+      id
+      name
+      breed
+    }
+  }
+`;
+
+export const Dog: React.FunctionComponent<{ name: string }> = ({ name }) => {
+  const { loading, error, data } = useSubscription(
+    SUBSCRIBE_DOG_DOCUMENT,
+    { variables: { name } }
+  );
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error!</p>;
+
+  return (
+    <p>
+      {data.dog.name} is a {data.dog.breed}
+    </p>
+  );
+};
+```
+
+To unit test this component using `mock-apollo-client`, the test file could look like the following:
+
+```tsx
+// dog.test.tsx
+
+import { ApolloProvider } from '@apollo/client';
+import { mount, ReactWrapper } from 'enzyme';
+import { createMockClient, createMockSubscription, IMockSubscription } from 'mock-apollo-client';
+import * as React from 'react';
+
+import { SUBSCRIBE_DOG_DOCUMENT, Dog } from './dog';
+
+let wrapper: ReactWrapper;
+let mockSubscription: IMockSubscription;
+
+beforeEach(() => {
+  const mockClient = createMockClient();
+  mockSubscription = createMockSubscription();
+
+  mockClient.setRequestHandler(
+    SUBSCRIBE_DOG_DOCUMENT,
+    () => Promise.resolve(mockSubscription));
+
+  wrapper = mount(
+    <ApolloProvider client={mockClient}>
+      <Dog name="Rufus" />
+    </ApolloProvider>
+  );
+});
+
+it('renders the dog name and breed', () => {
+  mockSubscription.next({ data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } } });
+  expect(wrapper.text()).toContain('Rufus is a Poodle');
+});
+```
+
+The subscription can be closed by calling `.complete` if necessary for the test.
+
+#### Errors
+You can also test error states by calling `.error` on the `mockSubscription` and passing errors like described in [Error States](#error-states):
+```typescript
+mockSubscription.error(new Error('GraphQL Network Error'))
+```
+
+#### Multiple subscriptions
+
+It is advised to create a new subscription for each call if your test requires more than one subscription since one mock subscription will only handle one observer (overriding the previous ones):
+```typescript
+const subscriptions: IMockSubscription[] = []
+
+mockClient.setRequestHandler(
+  SUBSCRIBE_DOG_DOCUMENT,
+  () => {
+    const subscription = createMockSubscription();
+    subscriptions.push(subscription);
+    return Promise.resolve(subscription);
+  });
+
+subscriptions.forEach((s) => s.next({ data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } } }));
+```
+
 ### Specifying Apollo client options
 
 The `createMockClient` method can be provided with the same constructor arguments that `ApolloClient` accepts which are used when instantiating the mock Apollo client.
