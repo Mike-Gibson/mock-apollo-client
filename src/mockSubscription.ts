@@ -9,19 +9,19 @@ export interface IMockSubscription<TData = any> {
 }
 
 export type MockSubscriptionOptions = {
-  logging?: boolean
+  disableLogging?: boolean
 }
 
 export class MockSubscription<TData = any> implements IMockSubscription<TData> {
   private observer?: ZenObservable.SubscriptionObserver<FetchResult>;
-  private logging: boolean;
+  private loggingDisabled: boolean;
 
   constructor(options?: MockSubscriptionOptions) {
-    this.logging = options?.logging ?? true;
+    this.loggingDisabled = options?.disableLogging ?? false;
   }
 
   subscribe(observer: ZenObservable.SubscriptionObserver<FetchResult>) {
-    if (this.observer && this.logging) {
+    if (this.observer && !this.loggingDisabled) {
       console.warn(
         "Warning: mock-apollo-client - Subscription observer should probably not be overriden"
       );
@@ -49,16 +49,18 @@ export class MockSubscription<TData = any> implements IMockSubscription<TData> {
   }
 
   private verifyState() {
-    if (this.logging) {
-      if (!this.observer) {
-        console.warn(
-          "Warning: mock-apollo-client - Subscription has no observer, this will have no effect"
-        );
-      } else if (this.closed) {
-        console.warn(
-          "Warning: mock-apollo-client - Subscription is closed, this will have no effect"
-        );
-      }
+    if (this.loggingDisabled) {
+      return;
+    }
+
+    if (!this.observer) {
+      console.warn(
+        "Warning: mock-apollo-client - Subscription has no observer, this will have no effect"
+      );
+    } else if (this.closed) {
+      console.warn(
+        "Warning: mock-apollo-client - Subscription is closed, this will have no effect"
+      );
     }
   }
 }

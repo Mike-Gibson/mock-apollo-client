@@ -38,7 +38,7 @@ describe("class MockLink", () => {
     });
 
     it("does not warn if logging is disabled", () => {
-      mockSubscription = new MockSubscription({ logging: false });
+      mockSubscription = new MockSubscription({ disableLogging: true });
       mockSubscription.subscribe(mockObserver);
       mockSubscription.subscribe(mockObserver);
       expect(console.warn).not.toBeCalled();
@@ -59,7 +59,7 @@ describe("class MockLink", () => {
     });
 
     it("does not warn if logging is disabled", () => {
-      mockSubscription = new MockSubscription({ logging: false });
+      mockSubscription = new MockSubscription({ disableLogging: true });
       mockSubscription.next({ data: {} });
       expect(console.warn).not.toBeCalled();
     });
@@ -79,7 +79,7 @@ describe("class MockLink", () => {
     });
 
     it("does not warn if logging is disabled", () => {
-      mockSubscription = new MockSubscription({ logging: false });
+      mockSubscription = new MockSubscription({ disableLogging: true });
       mockSubscription.error(new Error());
       expect(console.warn).not.toBeCalled();
     });
@@ -99,7 +99,7 @@ describe("class MockLink", () => {
     });
 
     it("does not warn if logging is disabled", () => {
-      mockSubscription = new MockSubscription({ logging: false });
+      mockSubscription = new MockSubscription({ disableLogging: true });
       mockSubscription.complete();
       expect(console.warn).not.toBeCalled();
     });
