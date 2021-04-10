@@ -2,7 +2,7 @@ import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from '@a
 import { print } from 'graphql';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
 import { removeClientSetsFromDocument } from '@apollo/client/utilities';
-import { MockSubscription } from './mockSubscription';
+import { IMockSubscription, MockSubscription } from './mockSubscription';
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler | undefined> = {};
@@ -36,7 +36,7 @@ export class MockLink extends ApolloLink {
     return new Observable<FetchResult>(observer => {
       let result:
         | Promise<RequestHandlerResponse<any>>
-        | MockSubscription<any>
+        | IMockSubscription<any>
         | undefined = undefined;
 
       try {
