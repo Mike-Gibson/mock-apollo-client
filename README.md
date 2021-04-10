@@ -218,17 +218,17 @@ beforeEach(() => {
   );
 });
 
-it('renders the initial dog details', () => {
+it('renders the dog details', () => {
   act(() => {
     mockSubscription.next({ data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 0 } } });
   });
-  expect(wrapper.text()).toContain('Rufus has barked 0 time(s)');
-});
 
-it('renders updated dog details when new data is received', () => {
+  expect(wrapper.text()).toContain('Rufus has barked 0 time(s)');
+
   act(() => {
     mockSubscription.next({ data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 1 } } });
   });
+
   expect(wrapper.text()).toContain('Rufus has barked 1 time(s)');
 });
 ```
