@@ -153,10 +153,10 @@ Mutations can be tested the same way that queries are, by using `setRequestHandl
 
 ### Subscriptions
 
-Subscriptions can be tested, but require a different setup due to their async nature. 
+Subscriptions can be tested, but require a different setup as they receive a stream of data.
 Consider the file below, which contains a single subscription and a component which is responsible for rendering the updated data:
 ```tsx
-// dog.tsx
+// dogSubscription.tsx
 
 import { gql, useSubscription } from '@apollo/client';
 import React from 'react';
@@ -166,12 +166,12 @@ export const SUBSCRIBE_DOG_DOCUMENT = gql`
     dog(name: $name) {
       id
       name
-      breed
+      numberOfBarks
     }
   }
 `;
 
-export const Dog: React.FunctionComponent<{ name: string }> = ({ name }) => {
+export const DogSubscription: React.FunctionComponent<{ name: string }> = ({ name }) => {
   const { loading, error, data } = useSubscription(
     SUBSCRIBE_DOG_DOCUMENT,
     { variables: { name } }
@@ -181,7 +181,7 @@ export const Dog: React.FunctionComponent<{ name: string }> = ({ name }) => {
 
   return (
     <p>
-      {data.dog.name} is a {data.dog.breed}
+      {data.dog.name} has barked {data.dog.numberOfBarks} time(s)
     </p>
   );
 };
@@ -190,14 +190,15 @@ export const Dog: React.FunctionComponent<{ name: string }> = ({ name }) => {
 To unit test this component using `mock-apollo-client`, the test file could look like the following:
 
 ```tsx
-// dog.test.tsx
+// dogSubscription.test.tsx
 
 import { ApolloProvider } from '@apollo/client';
 import { mount, ReactWrapper } from 'enzyme';
 import { createMockClient, createMockSubscription, IMockSubscription } from 'mock-apollo-client';
+import { act } from 'react-dom/test-utils';
 import * as React from 'react';
 
-import { SUBSCRIBE_DOG_DOCUMENT, Dog } from './dog';
+import { SUBSCRIBE_DOG_DOCUMENT, DogSubscription } from './dogSubscription';
 
 let wrapper: ReactWrapper;
 let mockSubscription: IMockSubscription;
@@ -208,44 +209,57 @@ beforeEach(() => {
 
   mockClient.setRequestHandler(
     SUBSCRIBE_DOG_DOCUMENT,
-    () => Promise.resolve(mockSubscription));
+    () => mockSubscription);
 
   wrapper = mount(
     <ApolloProvider client={mockClient}>
-      <Dog name="Rufus" />
+      <DogSubscription name="Rufus" />
     </ApolloProvider>
   );
 });
 
-it('renders the dog name and breed', () => {
-  mockSubscription.next({ data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } } });
-  expect(wrapper.text()).toContain('Rufus is a Poodle');
+it('renders the initial dog details', () => {
+  act(() => {
+    mockSubscription.next({ data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 0 } } });
+  });
+  expect(wrapper.text()).toContain('Rufus has barked 0 time(s)');
+});
+
+it('renders updated dog details when new data is received', () => {
+  act(() => {
+    mockSubscription.next({ data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 1 } } });
+  });
+  expect(wrapper.text()).toContain('Rufus has barked 1 time(s)');
 });
 ```
 
 The subscription can be closed by calling `.complete` if necessary for the test.
 
 #### Errors
-You can also test error states by calling `.error` on the `mockSubscription` and passing errors like described in [Error States](#error-states):
+
+You can also test error states by calling `.error` on the `mockSubscription` and passing errors as described in [Error States](#error-states):
 ```typescript
 mockSubscription.error(new Error('GraphQL Network Error'))
 ```
 
 #### Multiple subscriptions
 
-It is advised to create a new subscription for each call if your test requires more than one subscription since one mock subscription will only handle one observer (overriding the previous ones):
+A mock subscription will only be associated with a single invocation of a query. If a component is subscribing to the same query multiple times, then a separate mock subscription should be used for each one.
+
 ```typescript
-const subscriptions: IMockSubscription[] = []
+const subscriptions: IMockSubscription[] = [];
 
 mockClient.setRequestHandler(
   SUBSCRIBE_DOG_DOCUMENT,
   () => {
     const subscription = createMockSubscription();
     subscriptions.push(subscription);
-    return Promise.resolve(subscription);
+    return subscription;
   });
 
-subscriptions.forEach((s) => s.next({ data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } } }));
+...
+
+subscriptions.forEach((s) => s.next({ data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 1 } } }));
 ```
 
 ### Specifying Apollo client options
