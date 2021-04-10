@@ -298,6 +298,8 @@ describe('MockClient integration tests', () => {
         expect(onError).toHaveBeenCalledTimes(1);
         expect(onError).toHaveBeenCalledWith(new Error('GraphQL Network Error'));
         expect(onComplete).not.toHaveBeenCalled();
+
+        expect(console.warn).not.toHaveBeenCalled();
       });
 
       it('returns an observable which produces the correct values until the subscription is completed', async () => {
@@ -322,6 +324,8 @@ describe('MockClient integration tests', () => {
         expect(onError).not.toHaveBeenCalled();
         expect(onComplete).toHaveBeenCalledTimes(1);
         expect(onComplete).toHaveBeenCalledWith();
+
+        expect(console.warn).not.toHaveBeenCalled();
       });
 
       it('throws when a handler is added for the same query', () => {
