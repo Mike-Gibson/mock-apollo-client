@@ -4,6 +4,7 @@ import { ApolloQueryResult, gql } from '@apollo/client/core';
 // Would be nice to have, but can't find an elegant way of doing it.
 
 import { createMockClient, MockApolloClient } from './mockClient';
+import { createMockSubscription, IMockSubscription } from './mockSubscription';
 
 describe('MockClient integration tests', () => {
   let mockClient: MockApolloClient;
@@ -51,16 +52,9 @@ describe('MockClient integration tests', () => {
     });
 
     describe('Given request handler is not defined', () => {
-      let promise: Promise<ApolloQueryResult<any>>;
-
-      beforeEach(() => {
-        promise = mockClient.query({ query: queryTwo });
-      });
-
-      it('returns a promise which rejects due to handler not being defined', async () => {
-        expect(promise).toBeInstanceOf(Promise);
-
-        await expect(promise).rejects.toThrowError('Request handler not defined for query');
+      it('throws when executing the query', () => {
+        expect(() => mockClient.query({ query: queryTwo }))
+          .toThrowError('Request handler not defined for query');
       });
     });
   });
@@ -202,6 +196,147 @@ describe('MockClient integration tests', () => {
 
         expect(result.data).toEqual({ user: { id: 1, name: 'bob', isLoggedIn: false } });
         expect(requestHandler).toBeCalledTimes(1);
+      });
+    });
+  });
+
+  describe('Subscriptions', () => {
+    const queryOne = gql`query One {one}`;
+    const queryTwo = gql`query Two {two}`;
+
+    let mockSubscription: IMockSubscription<{ one: string }>;
+    let requestHandler: jest.Mock;
+
+    beforeEach(() => {
+      mockClient = createMockClient();
+
+      mockSubscription = createMockSubscription();
+
+      requestHandler = jest.fn().mockReturnValue(mockSubscription);
+
+      mockClient.setRequestHandler(queryOne, requestHandler);
+    });
+
+    describe('Given request handler is defined', () => {
+      let onNext: jest.Mock;
+      let onError: jest.Mock;
+      let onComplete: jest.Mock;
+
+      let clearMocks: () => void;
+
+      beforeEach(() => {
+        onNext = jest.fn();
+        onError = jest.fn();
+        onComplete = jest.fn();
+
+        clearMocks = () => {
+          onNext.mockClear();
+          onError.mockClear();
+          onComplete.mockClear();
+        };
+
+        const observable = mockClient.subscribe({ query: queryOne, variables: { a: 1 } });
+
+        observable.subscribe(
+          onNext,
+          onError,
+          onComplete);
+      });
+
+      it('returns an observable which produces the correct values until a GraphQL error is returned', async () => {
+        expect(onNext).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).not.toHaveBeenCalled();
+
+        clearMocks();
+
+        mockSubscription.next({ data: { one: 'A' } });
+
+        expect(onNext).toHaveBeenCalledTimes(1);
+        expect(onNext).toHaveBeenCalledWith({ data: { one: 'A' } });
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).not.toHaveBeenCalled();
+
+        clearMocks();
+
+        mockSubscription.next({ data: { one: 'B' } });
+
+        expect(onNext).toHaveBeenCalledTimes(1);
+        expect(onNext).toHaveBeenCalledWith({ data: { one: 'B' } });
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).not.toHaveBeenCalled();
+
+        clearMocks();
+
+        mockSubscription.next({ data: undefined, errors: [{ message: 'GraphQL Error' }] });
+
+        expect(onNext).not.toHaveBeenCalled();
+        expect(onError).toHaveBeenCalled();
+        expect(onError).toHaveBeenCalledWith(new Error('GraphQL Error'));
+        expect(onComplete).not.toHaveBeenCalled();
+      });
+
+      it('returns an observable which produces the correct values until a GraphQL network error is returned', async () => {
+        expect(onNext).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).not.toHaveBeenCalled();
+
+        clearMocks();
+
+        mockSubscription.next({ data: { one: 'A' } });
+
+        expect(onNext).toHaveBeenCalledTimes(1);
+        expect(onNext).toHaveBeenCalledWith({ data: { one: 'A' } });
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).not.toHaveBeenCalled();
+
+        clearMocks();
+
+        mockSubscription.error(new Error('GraphQL Network Error'));
+
+        expect(onNext).not.toHaveBeenCalled();
+        expect(onError).toHaveBeenCalledTimes(1);
+        expect(onError).toHaveBeenCalledWith(new Error('GraphQL Network Error'));
+        expect(onComplete).not.toHaveBeenCalled();
+
+        expect(console.warn).not.toHaveBeenCalled();
+      });
+
+      it('returns an observable which produces the correct values until the subscription is completed', async () => {
+        expect(onNext).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).not.toHaveBeenCalled();
+
+        clearMocks();
+
+        mockSubscription.next({ data: { one: 'A' } });
+
+        expect(onNext).toHaveBeenCalledTimes(1);
+        expect(onNext).toHaveBeenCalledWith({ data: { one: 'A' } });
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).not.toHaveBeenCalled();
+
+        clearMocks();
+
+        mockSubscription.complete();
+
+        expect(onNext).not.toHaveBeenCalled();
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).toHaveBeenCalledTimes(1);
+        expect(onComplete).toHaveBeenCalledWith();
+
+        expect(console.warn).not.toHaveBeenCalled();
+      });
+
+      it('throws when a handler is added for the same query', () => {
+        expect(() => mockClient.setRequestHandler(queryOne, jest.fn())).toThrowError('Request handler already defined ');
+      });
+    });
+
+    describe('Given request handler is not defined', () => {
+      it('throws when attempting to subscribe to query', () => {
+        expect(() => mockClient.subscribe({ query: queryTwo }))
+          .toThrowError('Request handler not defined for query');
       });
     });
   });
