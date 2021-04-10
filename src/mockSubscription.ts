@@ -23,7 +23,8 @@ export class MockSubscription<TData = any> implements IMockSubscription<TData> {
   subscribe(observer: ZenObservable.SubscriptionObserver<FetchResult>) {
     if (this.observer && !this.loggingDisabled) {
       console.warn(
-        "Warning: mock-apollo-client - Subscription observer should probably not be overriden"
+        'Warning: mock-apollo-client - Mock subscription was already being used for a previous query. ' +
+        'Subsequent calls to next/error/complete will only affect subscriptions to the new query.'
       );
     }
     this.observer = observer;
@@ -55,11 +56,11 @@ export class MockSubscription<TData = any> implements IMockSubscription<TData> {
 
     if (!this.observer) {
       console.warn(
-        "Warning: mock-apollo-client - Subscription has no observer, this will have no effect"
+        'Warning: mock-apollo-client - Mock subscription has no observer, this will have no effect'
       );
     } else if (this.closed) {
       console.warn(
-        "Warning: mock-apollo-client - Subscription is closed, this will have no effect"
+        'Warning: mock-apollo-client - Mock subscription is closed, this will have no effect'
       );
     }
   }
