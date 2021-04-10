@@ -1,5 +1,5 @@
-import { FetchResult } from "@apollo/client/core";
-import type { RequestHandlerResponse } from "./mockClient";
+import { FetchResult } from '@apollo/client/core';
+import type { RequestHandlerResponse } from './mockClient';
 
 export interface IMockSubscription<TData = any> {
   readonly closed: boolean;
