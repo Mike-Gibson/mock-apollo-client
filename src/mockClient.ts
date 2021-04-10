@@ -1,12 +1,12 @@
 import { ApolloClientOptions, ApolloClient, DocumentNode } from '@apollo/client/core';
 import { InMemoryCache as Cache, NormalizedCacheObject } from '@apollo/client/cache';
 import { MockLink } from './mockLink';
-import { MockSubscription } from './mockSubscription';
+import { IMockSubscription } from './mockSubscription';
 
 export type RequestHandler<TData = any, TVariables = any> =
   (variables: TVariables) =>
   | Promise<RequestHandlerResponse<TData>>
-  | MockSubscription<TData>;
+  | IMockSubscription<TData>;
 
 export type RequestHandlerResponse<T> =
   | { data: T }
