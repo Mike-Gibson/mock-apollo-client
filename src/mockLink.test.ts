@@ -1,5 +1,7 @@
 import { Operation } from 'apollo-link';
+import { print } from 'graphql/language/printer';
 import gql from 'graphql-tag';
+import { createMockSubscription } from './mockSubscription';
 
 import { MockLink } from './mockLink';
 
@@ -85,11 +87,11 @@ describe('class MockLink', () => {
   });
 
   describe('method request', () => {
-    const queryOneOperation = { query: queryOne, variables: { a: 'one'} } as Partial<Operation> as Operation;
+    const queryOneOperation = { query: queryOne, variables: { a: 'one' } } as Partial<Operation> as Operation;
 
     it('throws when a handler is not defined for the query', () => {
       expect(() => mockLink.request(queryOneOperation))
-        .toThrow('Request handler not defined for query');
+        .toThrowError(`Request handler not defined for query: ${print(queryOne)}`);
     });
 
     it('does not throw when a handler is defined for the query', () => {
@@ -99,17 +101,17 @@ describe('class MockLink', () => {
         .not.toThrow();
     });
 
-    it('correctly executes the handler when the handler successfully resolves', async () => {
+    it('correctly executes the handler when the handler is defined as a promise and it and successfully resolves', async () => {
       const handler = jest.fn().mockResolvedValue({ data: 'Query one result' });
       mockLink.setRequestHandler(queryOne, handler);
 
-      const observer = mockLink.request(queryOneOperation);
+      const observerable = mockLink.request(queryOneOperation);
 
       const next = jest.fn();
       const error = jest.fn();
       const complete = jest.fn();
 
-      observer.subscribe(next, error, complete);
+      observerable.subscribe(next, error, complete);
 
       await new Promise(r => setTimeout(r, 0));
 
@@ -122,17 +124,17 @@ describe('class MockLink', () => {
       expect(complete).toBeCalledTimes(1);
     });
 
-    it('correctly executes the handler when the handler rejects', async () => {
+    it('correctly executes the handler when the handler is defined as a promise and it rejects', async () => {
       const handler = jest.fn().mockRejectedValue('Test error');
       mockLink.setRequestHandler(queryOne, handler);
 
-      const observer = mockLink.request(queryOneOperation);
+      const observerable = mockLink.request(queryOneOperation);
 
       const next = jest.fn();
       const error = jest.fn();
       const complete = jest.fn();
 
-      observer.subscribe(next, error, complete);
+      observerable.subscribe(next, error, complete);
 
       await new Promise(r => setTimeout(r, 0));
 
@@ -145,20 +147,105 @@ describe('class MockLink', () => {
       expect(complete).not.toBeCalled();
     });
 
-    it('throws when the handler returns undefined', async () => {
-      const handler = jest.fn();
+    it('returns an error when the handler is defined but returns undefined', async () => {
+      const handler = jest.fn().mockReturnValue(undefined);
       mockLink.setRequestHandler(queryOne, handler);
 
-      expect(() => mockLink.request(queryOneOperation))
-        .toThrow("Request handler must return a promise. Received 'undefined'.");
+      const observerable = mockLink.request(queryOneOperation);
+
+      const next = jest.fn();
+      const error = jest.fn();
+      const complete = jest.fn();
+
+      observerable.subscribe(next, error, complete);
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(handler).toBeCalledTimes(1);
+      expect(handler).toBeCalledWith({ a: 'one' });
+
+      expect(next).not.toBeCalled();
+      expect(error).toBeCalledTimes(1);
+      expect(error).toBeCalledWith(new Error("Request handler must return a promise or subscription. Received 'undefined'."));
+      expect(complete).not.toBeCalled();
     });
 
-    it('throws when the handler throws', async () => {
+    it('returns an error when the handler is defined but throws', async () => {
       const handler = jest.fn(() => { throw new Error('Error in handler') });
       mockLink.setRequestHandler(queryOne, handler);
 
-      expect(() => mockLink.request(queryOneOperation))
-        .toThrow("Unexpected error whilst calling request handler: Error in handler");
+      const observerable = mockLink.request(queryOneOperation);
+
+      const next = jest.fn();
+      const error = jest.fn();
+      const complete = jest.fn();
+
+      observerable.subscribe(next, error, complete);
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(handler).toBeCalledTimes(1);
+      expect(handler).toBeCalledWith({ a: 'one' });
+
+      expect(next).not.toBeCalled();
+      expect(error).toBeCalledTimes(1);
+      expect(error).toBeCalledWith(new Error('Unexpected error whilst calling request handler: Error in handler'));
+      expect(complete).not.toBeCalled();
+    });
+
+    it('correctly executes the handler when handler is defined as a subscription and it produces data', async () => {
+      const subscription = createMockSubscription();
+      const handler = jest.fn().mockReturnValue(subscription);
+      mockLink.setRequestHandler(queryOne, handler);
+
+      const observerable = mockLink.request(queryOneOperation);
+
+      const next = jest.fn();
+      const error = jest.fn();
+      const complete = jest.fn();
+
+      observerable.subscribe(next, error, complete);
+
+      subscription.next({ data: 'Query one result' });
+      subscription.next({ data: 'Query one result' });
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(handler).toBeCalledTimes(1);
+      expect(handler).toBeCalledWith({ a: 'one' });
+
+      expect(next).toBeCalledTimes(2);
+      expect(next).toBeCalledWith({ data: 'Query one result' });
+      expect(error).not.toBeCalled();
+      expect(complete).not.toBeCalledTimes(1);
+      expect(subscription.closed).toBe(false);
+    })
+
+    it('correctly executes the handler when handler is defined as a subscription and it produces an error', async () => {
+      const subscription = createMockSubscription();
+      const handler = jest.fn().mockReturnValue(subscription);
+      mockLink.setRequestHandler(queryOne, handler);
+
+      const observerable = mockLink.request(queryOneOperation);
+
+      const next = jest.fn();
+      const error = jest.fn();
+      const complete = jest.fn();
+
+      observerable.subscribe(next, error, complete);
+
+      subscription.error('Test error');
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(handler).toBeCalledTimes(1);
+      expect(handler).toBeCalledWith({ a: 'one' });
+
+      expect(next).not.toBeCalled();
+      expect(error).toBeCalledTimes(1);
+      expect(error).toBeCalledWith('Test error');
+      expect(complete).not.toBeCalled();
+      expect(subscription.closed).toBe(true);
     });
 
     describe('when query contains @client directives', () => {
