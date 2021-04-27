@@ -200,6 +200,32 @@ describe('MockClient integration tests', () => {
     });
   });
 
+  describe('Connection directives', () => {
+    describe('Given query contains @connection directive', () => {
+      const query = gql`query A { items @connection(key: "foo") { id } }`;
+
+      let requestHandler: jest.Mock;
+
+      beforeEach(() => {
+        mockClient = createMockClient();
+
+        requestHandler = jest.fn().mockResolvedValue({
+          data: { items: [{ id: 1 }] },
+        });
+      });
+
+      it('correctly executes the registered request handler and returns the correct result', async () => {
+        mockClient.setRequestHandler(query, requestHandler);
+
+        const result = await mockClient.query({ query });
+
+        expect(result.data).toEqual({ items: [{ id: 1 }] });
+
+        expect(console.warn).not.toBeCalled();
+      });
+    });
+  });
+
   describe('Subscriptions', () => {
     const queryOne = gql`query One {one}`;
     const queryTwo = gql`query Two {two}`;
