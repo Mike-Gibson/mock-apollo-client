@@ -3,11 +3,17 @@ import { InMemoryCache as Cache, NormalizedCacheObject } from 'apollo-cache-inme
 import { DocumentNode } from 'apollo-link';
 import { removeClientSetsFromDocument } from 'apollo-utilities';
 import { MockLink } from './mockLink';
+import { IMockSubscription } from './mockSubscription';
 
 export type RequestHandler<TData = any, TVariables = any> =
-  (variables: TVariables) => Promise<RequestHandlerResponse<TData>>;
+  (variables: TVariables) =>
+  | Promise<RequestHandlerResponse<TData>>
+  | IMockSubscription<TData>;
 
-export type RequestHandlerResponse<T> = { data: T, errors?: any[] };
+export type RequestHandlerResponse<T> =
+  | { data: T }
+  | { errors: any[] };
+
 
 export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
   { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };

@@ -3,6 +3,7 @@ import { removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } f
 import { print } from 'graphql/language/printer';
 import { visit } from 'graphql/language/visitor';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
+import { IMockSubscription, MockSubscription } from './mockSubscription';
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler> = {};
@@ -26,27 +27,33 @@ export class MockLink extends ApolloLink {
       throw new Error(`Request handler not defined for query: ${format(operation.query)}`);
     }
 
-    let resultPromise: Promise<RequestHandlerResponse<any>> | undefined = undefined;
-
-    try {
-      resultPromise = handler(operation.variables);
-    } catch (error) {
-      throw new Error(`Unexpected error whilst calling request handler: ${error.message}`);
-    }
-
-    if (!isPromise(resultPromise)) {
-      throw new Error(`Request handler must return a promise. Received '${typeof resultPromise}'.`);
-    }
-
     return new Observable<FetchResult>(observer => {
-      resultPromise!
-        .then((result) => {
-          observer.next(result);
-          observer.complete();
-        })
-        .catch((error) => {
-          observer.error(error);
-        });
+      let result:
+        | Promise<RequestHandlerResponse<any>>
+        | IMockSubscription<any>
+        | undefined = undefined;
+
+      try {
+        result = handler(operation.variables);
+      } catch (error) {
+        throw new Error(`Unexpected error whilst calling request handler: ${error.message}`);
+      }
+
+      if (isPromise(result)) {
+        result
+          .then((result) => {
+            observer.next(result);
+            observer.complete();
+          })
+          .catch((error) => {
+            observer.error(error);
+          });
+      } else if (isSubscription(result)) {
+        result.subscribe(observer)
+      } else {
+        throw new Error(`Request handler must return a promise or subscription. Received '${typeof result}'.`);
+      }
+
       return () => { };
     });
   }
@@ -93,3 +100,6 @@ const format = (query: DocumentNode | null): string =>
 
 const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
   maybePromise && typeof (maybePromise as any).then === 'function';
+
+const isSubscription = (maybeSubscription: any): maybeSubscription is MockSubscription<any> =>
+  maybeSubscription && maybeSubscription instanceof MockSubscription;
