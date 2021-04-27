@@ -1,3 +1,9 @@
+# [0.7.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v0.7.0) (2021-04-27)
+
+### Features
+
+* Support subscriptions [#28](https://github.com/Mike-Gibson/mock-apollo-client/issues/28)
+
 # [0.6.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v0.6.0) (2021-04-01)
 
 ### Features
