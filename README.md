@@ -277,3 +277,50 @@ const mockClient = createMockClient({ cache });
 ```
 
 Note: it is not possible to specify the `link` to use as this is how `mock-apollo-client` injects its behaviour.
+
+### Fragments
+
+If your queries or mutations use fragments against union or interface types, you must inject a cache object when creating the mock client which has been provided with `possibleTypes`, and also include the correct `__typename` field when mocking the response.
+
+For example:
+
+```typescript
+import { InMemoryCache } from '@apollo/client';
+import { createMockClient } from 'mock-apollo-client';
+
+const cache = new InMemoryCache({
+  possibleTypes: {
+    Hardware: ['Memory', 'Cpu'],
+  },
+});
+
+const mockClient = createMockClient({ cache });
+```
+
+You must then ensure that the query result includes the `__typename` field as it would when calling your actual GraphQL API. This is to ensure that the fragment matching works as expected:
+
+```typescript
+const query = gql`
+  query Hardware {
+    hardware {
+      id
+      ... on Memory {
+        size
+      }
+      ... on Cpu {
+        speed
+      }
+    }
+  }
+`;
+
+const mockData = {
+  hardware: {
+    __typename: 'Memory',
+    id: 2,
+    size: '16gb',
+  },
+};
+
+const requestHandler = jest.fn().mockResolvedValue({ data: mockData });
+```

@@ -68,6 +68,16 @@ describe('class MockLink', () => {
         expect(console.warn).not.toBeCalled();
       });
     });
+
+    describe('when queries contain __typename field', () => {
+      it('does not throw when adding query', () => {
+        const query = gql`query Person { __typename name }`;
+
+        expect(() => {
+          mockLink.setRequestHandler(query, jest.fn());
+        }).not.toThrow();
+      });
+    });
   });
 
   describe('method request', () => {
@@ -89,9 +99,9 @@ describe('class MockLink', () => {
       mockLink.setRequestHandler(queryOne, handler);
       const observer = createMockObserver();
 
-      const observerable = mockLink.request(queryOneOperation);
+      const observable = mockLink.request(queryOneOperation);
 
-      observerable.subscribe(observer);
+      observable.subscribe(observer);
 
       await new Promise(r => setTimeout(r, 0));
 
@@ -109,9 +119,9 @@ describe('class MockLink', () => {
       mockLink.setRequestHandler(queryOne, handler);
       const observer = createMockObserver();
 
-      const observerable = mockLink.request(queryOneOperation);
+      const observable = mockLink.request(queryOneOperation);
 
-      observerable.subscribe(observer);
+      observable.subscribe(observer);
 
       await new Promise(r => setTimeout(r, 0));
 
@@ -164,9 +174,9 @@ describe('class MockLink', () => {
       mockLink.setRequestHandler(queryOne, handler);
       const observer = createMockObserver();
 
-      const observerable = mockLink.request(queryOneOperation);
+      const observable = mockLink.request(queryOneOperation);
 
-      observerable.subscribe(observer);
+      observable.subscribe(observer);
 
       subscription.next({ data: 'Query one result' });
       subscription.next({ data: 'Query one result' });
@@ -189,9 +199,9 @@ describe('class MockLink', () => {
       mockLink.setRequestHandler(queryOne, handler);
       const observer = createMockObserver();
 
-      const observerable = mockLink.request(queryOneOperation);
+      const observable = mockLink.request(queryOneOperation);
 
-      observerable.subscribe(observer);
+      observable.subscribe(observer);
 
       subscription.error('Test error');
 
@@ -205,6 +215,31 @@ describe('class MockLink', () => {
       expect(observer.error).toBeCalledWith('Test error');
       expect(observer.complete).not.toBeCalled();
       expect(subscription.closed).toBe(true);
+    });
+
+    it('correctly executes the handler when query contains __typename field', async () => {
+      const personQueryWithTypename = gql`query Person { __typename name}`;
+      const personQueryWithoutTypename = gql`query Person { name }`;
+
+      const handler = jest.fn().mockResolvedValue({ data: { __typename: 'Person', name: 'Bob' } });
+      mockLink.setRequestHandler(personQueryWithoutTypename, handler);
+      const observer = createMockObserver();
+
+      const queryOperation = { query: personQueryWithTypename } as Partial<Operation> as Operation;
+
+      const observable = mockLink.request(queryOperation);
+
+      observable.subscribe(observer);
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(handler).toBeCalledTimes(1);
+      expect(handler).toBeCalledWith(undefined);
+
+      expect(observer.next).toBeCalledTimes(1);
+      expect(observer.next).toBeCalledWith({ data: { __typename: 'Person', name: 'Bob' } });
+      expect(observer.error).not.toBeCalled();
+      expect(observer.complete).toBeCalledTimes(1);
     });
   });
 });

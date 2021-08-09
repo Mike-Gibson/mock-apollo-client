@@ -1,5 +1,5 @@
 import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from '@apollo/client/core';
-import { print } from 'graphql';
+import { print, visit } from 'graphql';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
 import { removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from '@apollo/client/utilities';
 import { IMockSubscription, MockSubscription } from './mockSubscription';
@@ -66,12 +66,27 @@ export class MockLink extends ApolloLink {
 }
 
 const normalise = (requestQuery: DocumentNode): DocumentNode => {
-  const stripped = removeConnectionDirectiveFromDocument(requestQuery);
+  let stripped = removeConnectionDirectiveFromDocument(requestQuery);
+
+  stripped = stripped !== null
+    ? stripTypenames(stripped)
+    : null;
 
   return stripped === null
     ? requestQuery
     : stripped;
 };
+
+const stripTypenames = (document: DocumentNode): DocumentNode | null =>
+  visit(
+    document,
+    {
+      Field: {
+        enter: (node) => node.name.value === '__typename'
+          ? null
+          : undefined,
+      },
+    });
 
 const requestToKey = (query: DocumentNode): string => {
   const normalised = normalise(query);
