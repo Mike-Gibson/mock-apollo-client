@@ -1,24 +1,38 @@
-import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from '@apollo/client/core';
-import { print, visit } from 'graphql';
-import { RequestHandler, RequestHandlerResponse } from './mockClient';
-import { removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from '@apollo/client/utilities';
-import { IMockSubscription, MockSubscription } from './mockSubscription';
+import {
+  ApolloLink,
+  DocumentNode,
+  Observable,
+  Operation,
+  FetchResult,
+} from "@apollo/client/core";
+import { print, visit } from "graphql";
+import { RequestHandler, RequestHandlerResponse } from "./mockClient";
+import {
+  removeClientSetsFromDocument,
+  removeConnectionDirectiveFromDocument,
+} from "@apollo/client/utilities";
+import { IMockSubscription, MockSubscription } from "./mockSubscription";
 
 export class MockLink extends ApolloLink {
   private requestHandlers: Record<string, RequestHandler | undefined> = {};
 
   setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
-    const queryWithoutClientDirectives = removeClientSetsFromDocument(requestQuery);
+    const queryWithoutClientDirectives =
+      removeClientSetsFromDocument(requestQuery);
 
     if (queryWithoutClientDirectives === null) {
-      console.warn('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+      console.warn(
+        "Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered."
+      );
       return;
     }
 
     const key = requestToKey(queryWithoutClientDirectives);
 
     if (this.requestHandlers[key]) {
-      throw new Error(`Request handler already defined for query: ${print(requestQuery)}`);
+      throw new Error(
+        `Request handler already defined for query: ${print(requestQuery)}`
+      );
     }
 
     this.requestHandlers[key] = handler;
@@ -30,10 +44,12 @@ export class MockLink extends ApolloLink {
     const handler = this.requestHandlers[key];
 
     if (!handler) {
-      throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
+      throw new Error(
+        `Request handler not defined for query: ${print(operation.query)}`
+      );
     }
 
-    return new Observable<FetchResult>(observer => {
+    return new Observable<FetchResult>((observer) => {
       let result:
         | Promise<RequestHandlerResponse<any>>
         | IMockSubscription<any>
@@ -41,8 +57,12 @@ export class MockLink extends ApolloLink {
 
       try {
         result = handler(operation.variables);
-      } catch (error) {
-        throw new Error(`Unexpected error whilst calling request handler: ${error.message}`);
+      } catch (error: any) {
+        throw new Error(
+          `Unexpected error whilst calling request handler: ${
+            error?.message ?? ""
+          }`
+        );
       }
 
       if (isPromise(result)) {
@@ -55,12 +75,14 @@ export class MockLink extends ApolloLink {
             observer.error(error);
           });
       } else if (isSubscription(result)) {
-        result.subscribe(observer)
+        result.subscribe(observer);
       } else {
-        throw new Error(`Request handler must return a promise or subscription. Received '${typeof result}'.`);
+        throw new Error(
+          `Request handler must return a promise or subscription. Received '${typeof result}'.`
+        );
       }
 
-      return () => { };
+      return () => {};
     });
   };
 }
@@ -68,35 +90,29 @@ export class MockLink extends ApolloLink {
 const normalise = (requestQuery: DocumentNode): DocumentNode => {
   let stripped = removeConnectionDirectiveFromDocument(requestQuery);
 
-  stripped = stripped !== null
-    ? stripTypenames(stripped)
-    : null;
+  stripped = stripped !== null ? stripTypenames(stripped) : null;
 
-  return stripped === null
-    ? requestQuery
-    : stripped;
+  return stripped === null ? requestQuery : stripped;
 };
 
 const stripTypenames = (document: DocumentNode): DocumentNode | null =>
-  visit(
-    document,
-    {
-      Field: {
-        enter: (node) => node.name.value === '__typename'
-          ? null
-          : undefined,
-      },
-    });
+  visit(document, {
+    Field: {
+      enter: (node) => (node.name.value === "__typename" ? null : undefined),
+    },
+  });
 
 const requestToKey = (query: DocumentNode): string => {
   const normalised = normalise(query);
   const queryString = query && print(normalised);
   const requestKey = { query: queryString };
   return JSON.stringify(requestKey);
-}
+};
 
 const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
-  maybePromise && typeof (maybePromise as any).then === 'function';
+  maybePromise && typeof (maybePromise as any).then === "function";
 
-const isSubscription = (maybeSubscription: any): maybeSubscription is MockSubscription<any> =>
+const isSubscription = (
+  maybeSubscription: any
+): maybeSubscription is MockSubscription<any> =>
   maybeSubscription && maybeSubscription instanceof MockSubscription;
