@@ -42,7 +42,8 @@ export class MockLink extends ApolloLink {
       try {
         result = handler(operation.variables);
       } catch (error) {
-        throw new Error(`Unexpected error whilst calling request handler: ${error.message}`);
+        const message = error instanceof Error ? error.message : error;
+        throw new Error(`Unexpected error whilst calling request handler: ${message}`);
       }
 
       if (isPromise(result)) {
