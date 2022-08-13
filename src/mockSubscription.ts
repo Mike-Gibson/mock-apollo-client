@@ -9,18 +9,29 @@ export interface IMockSubscription<TData = any> {
 }
 
 export type MockSubscriptionOptions = {
-  disableLogging?: boolean
+  disableLogging?: boolean;
+}
+
+/**
+ * SubscriptionObserver interface copied from zen-observable-ts in order to be compatible
+ * with @apollo/client library pre-3.5 which used zen-observable and different imports/types
+ */
+ export interface SubscriptionObserver<T> {
+  closed: boolean;
+  next(value: T): void;
+  error(errorValue: any): void;
+  complete(): void;
 }
 
 export class MockSubscription<TData = any> implements IMockSubscription<TData> {
-  private observer?: ZenObservable.SubscriptionObserver<FetchResult>;
+  private observer?: SubscriptionObserver<FetchResult>;
   private loggingDisabled: boolean;
 
   constructor(options?: MockSubscriptionOptions) {
     this.loggingDisabled = options?.disableLogging ?? false;
   }
 
-  subscribe(observer: ZenObservable.SubscriptionObserver<FetchResult>) {
+  subscribe(observer: SubscriptionObserver<FetchResult>) {
     if (this.observer && !this.loggingDisabled) {
       console.warn(
         'Warning: mock-apollo-client - Mock subscription was already being used for a previous query. ' +
