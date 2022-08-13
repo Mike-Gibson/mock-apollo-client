@@ -1,7 +1,7 @@
 import { FetchResult } from '@apollo/client/core';
-import { MockSubscription } from './mockSubscription';
+import { MockSubscription, SubscriptionObserver } from './mockSubscription';
 
-class MockObserver implements ZenObservable.SubscriptionObserver<FetchResult> {
+class MockObserver implements SubscriptionObserver<FetchResult> {
   closed: boolean;
   next: (value: FetchResult) => void;
   error: (errorValue: any) => void;
