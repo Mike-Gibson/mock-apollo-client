@@ -19,6 +19,6 @@ jobs:
         node-version: 16
     - run: npm ci
     - run: npm run build
-    - run: npm test
+    - run: npm run test:suite
       env:
         CI: true
