@@ -1,3 +1,9 @@
+# [1.2.1](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.2.1) (2022-08-13)
+
+### Fixes
+
+* Fix issue - Cannot find type definition file for ‘zen-observable' with Apollo client >= 3.5.0 [#47](https://github.com/Mike-Gibson/mock-apollo-client/issues/47)
+
 # [1.2.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.2.0) (2021-08-10)
 
 ### Features
