@@ -9,7 +9,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:suite": "./runTestSuite.sh",
-    "deploy": "npm run test && npm run build && npm publish"
+    "deploy": "npm run test:suite && npm run build && npm publish"
   },
   "repository": {
     "type": "git",
