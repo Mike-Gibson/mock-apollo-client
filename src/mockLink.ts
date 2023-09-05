@@ -24,7 +24,7 @@ export class MockLink extends ApolloLink {
     this.requestHandlers[key] = handler;
   }
 
-  request = (operation: Operation) => {
+  this.request = (operation: Operation) => {
     const key = requestToKey(operation.query);
 
     const handler = this.requestHandlers[key];
