@@ -89,9 +89,18 @@ describe('class MockLink', () => {
       complete: jest.fn(),
     });
 
-    it('throws when a handler is not defined for the query', () => {
-      expect(() => mockLink.request(queryOneOperation))
-        .toThrowError(`Request handler not defined for query: ${print(queryOne)}`)
+    it('returns an error when a handler is not defined for the query', async () => {
+      const observable = mockLink.request(queryOneOperation);
+      const observer = createMockObserver();
+
+      observable.subscribe(observer);
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(observer.next).not.toBeCalled();
+      expect(observer.error).toBeCalledTimes(1);
+      expect(observer.error).toBeCalledWith(new Error(`Request handler not defined for query: ${print(queryOne)}`));
+      expect(observer.complete).not.toBeCalled();
     });
 
     it('correctly executes the handler when the handler is defined as a promise and it and successfully resolves', async () => {

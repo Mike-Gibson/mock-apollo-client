@@ -25,15 +25,15 @@ export class MockLink extends ApolloLink {
   }
 
   request = (operation: Operation) => {
-    const key = requestToKey(operation.query);
-
-    const handler = this.requestHandlers[key];
-
-    if (!handler) {
-      throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
-    }
-
     return new Observable<FetchResult>(observer => {
+      const key = requestToKey(operation.query);
+
+      const handler = this.requestHandlers[key];
+
+      if (!handler) {
+        throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
+      }
+
       let result:
         | Promise<RequestHandlerResponse<any>>
         | IMockSubscription<any>
