@@ -5,6 +5,7 @@ import { ApolloQueryResult, gql, InMemoryCache } from '@apollo/client/core';
 
 import { createMockClient, MockApolloClient } from './mockClient';
 import { createMockSubscription, IMockSubscription } from './mockSubscription';
+import { print } from "graphql";
 
 describe('MockClient integration tests', () => {
   let mockClient: MockApolloClient;
@@ -55,9 +56,10 @@ describe('MockClient integration tests', () => {
     });
 
     describe('Given request handler is not defined', () => {
-      it('throws when executing the query', () => {
-        expect(() => mockClient.query({ query: queryTwo }))
-          .toThrowError('Request handler not defined for query');
+      it('returns a promise which rejects due to handler not being defined', async () => {
+        let promise =  mockClient.query({ query: queryTwo });
+
+        await expect(promise).rejects.toThrowError('Request handler not defined for query');
       });
     });
   });
@@ -541,9 +543,27 @@ describe('MockClient integration tests', () => {
     });
 
     describe('Given request handler is not defined', () => {
-      it('throws when attempting to subscribe to query', () => {
-        expect(() => mockClient.subscribe({ query: queryTwo }))
-          .toThrowError('Request handler not defined for query');
+      it('returns an observable which returns error if handler not defined for query', async () => {
+        let onNext = jest.fn();
+        let onError = jest.fn();
+        let onComplete = jest.fn();
+
+        const observable = mockClient.subscribe({ query: queryTwo });
+
+        observable.subscribe(
+            onNext,
+            onError,
+            onComplete
+        );
+
+        await new Promise(r => setTimeout(r, 0));
+
+        mockSubscription.next({ data: { one: 'A' } });
+
+        expect(onNext).not.toHaveBeenCalled();
+        expect(onError).toHaveBeenCalledWith(new Error(`Request handler not defined for query: ${print(queryTwo)}`));
+        expect(onError).toHaveBeenCalledTimes(1);
+        expect(onComplete).not.toHaveBeenCalled();
       });
     });
   });
