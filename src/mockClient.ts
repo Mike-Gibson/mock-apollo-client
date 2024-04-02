@@ -1,6 +1,6 @@
 import { ApolloClientOptions, ApolloClient, DocumentNode } from '@apollo/client/core';
 import { InMemoryCache as Cache, NormalizedCacheObject } from '@apollo/client/cache';
-import { MockLink } from './mockLink';
+import { MissingHandlerPolicy, MockLink } from './mockLink';
 import { IMockSubscription } from './mockSubscription';
 
 export type RequestHandler<TData = any, TVariables = any> =
@@ -15,7 +15,11 @@ export type RequestHandlerResponse<T> =
 export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
   { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };
 
-export type MockApolloClientOptions = Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> | undefined;
+interface CustomOptions {
+  missingHandlerPolicy?: MissingHandlerPolicy;
+}
+
+export type MockApolloClientOptions = Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> & CustomOptions | undefined;
 
 export const createMockClient = (options?: MockApolloClientOptions): MockApolloClient => {
   if ((options as any)?.link) {

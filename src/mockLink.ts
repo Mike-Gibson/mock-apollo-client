@@ -4,7 +4,22 @@ import { RequestHandler, RequestHandlerResponse } from './mockClient';
 import { removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from '@apollo/client/utilities';
 import { IMockSubscription, MockSubscription } from './mockSubscription';
 
+export type MissingHandlerPolicy = 'throw-error' | 'warn-and-return-error' | 'return-error';
+
+interface MockLinkOptions {
+  missingHandlerPolicy?: MissingHandlerPolicy;
+}
+
+const DEFAULT_MISSING_HANDLER_POLICY: MissingHandlerPolicy = 'throw-error';
+
 export class MockLink extends ApolloLink {
+  constructor(options?: MockLinkOptions) {
+    super();
+
+    this.missingHandlerPolicy = options?.missingHandlerPolicy || DEFAULT_MISSING_HANDLER_POLICY;
+  }
+
+  private readonly missingHandlerPolicy: MissingHandlerPolicy;
   private requestHandlers: Record<string, RequestHandler | undefined> = {};
 
   setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
@@ -25,14 +40,22 @@ export class MockLink extends ApolloLink {
   }
 
   request = (operation: Operation) => {
+    const key = requestToKey(operation.query);
+
+    const handler = this.requestHandlers[key];
+
+    if (!handler && this.missingHandlerPolicy === 'throw-error') {
+      throw new Error(getNotDefinedHandlerMessage(operation));
+    }
+
     return new Observable<FetchResult>(observer => {
-      const key = requestToKey(operation.query);
-
-      const handler = this.requestHandlers[key];
-
       if (!handler) {
-        throw new Error(`Request handler not defined for query: ${print(operation.query)}`);
+        if (this.missingHandlerPolicy === 'warn-and-return-error') {
+          console.warn(getNotDefinedHandlerMessage(operation));
+        }
+        throw new Error(getNotDefinedHandlerMessage(operation));
       }
+
 
       let result:
         | Promise<RequestHandlerResponse<any>>
@@ -101,3 +124,7 @@ const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
 
 const isSubscription = (maybeSubscription: any): maybeSubscription is MockSubscription<any> =>
   maybeSubscription && maybeSubscription instanceof MockSubscription;
+
+const getNotDefinedHandlerMessage = (operation: Operation) => {
+  return `Request handler not defined for query: ${print(operation.query)}`
+}
