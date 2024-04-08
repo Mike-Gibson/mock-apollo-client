@@ -263,7 +263,7 @@ describe('class MockLink', () => {
       expect(console.warn).toBeCalledWith(`Request handler not defined for query: ${print(queryOne)}`);
     });
 
-    it('when "ignore" returns an error when a handler is not defined for the query', async () => {
+    it('when "return-error" returns an error when a handler is not defined for the query', async () => {
       mockLink = new MockLink({missingHandlerPolicy: 'return-error'})
 
       const observable = mockLink.request(queryOneOperation);

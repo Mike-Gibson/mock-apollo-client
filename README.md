@@ -276,6 +276,21 @@ const cache = new InMemoryCache({
 const mockClient = createMockClient({ cache });
 ```
 
+Additionally, you can specify a `missingHandlerPolicy` to define the behavior of the mock client when a request handler for a particular operation is not found.
+
+The `missingHandlerPolicy` accepts one of three string values:
+- `'throw-error'`: The client throws an error when it encounters a missing handler.
+- `'warn-and-return-error'`: The client logs a warning message in the console and returns an error.
+- `'return-error'`: The client returns an error without any warning message.
+
+Here's an example of how you can set the `missingHandlerPolicy`:
+
+```typescript
+const mockClient = createMockClient({ missingHandlerPolicy: 'warn-and-return-error' });
+```
+
+In this example, if a request handler for a given operation is not found, the client will log a warning message to the console and then return an error.
+
 Note: it is not possible to specify the `link` to use as this is how `mock-apollo-client` injects its behaviour.
 
 ### Fragments
