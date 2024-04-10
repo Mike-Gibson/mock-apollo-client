@@ -24,14 +24,14 @@ export type MockSubscriptionOptions = {
 }
 
 export class MockSubscription<TData = any> implements IMockSubscription<TData> {
-  private observer?: SubscriptionObserver<FetchResult>;
+  private observer?: SubscriptionObserver<FetchResult<TData>>;
   private loggingDisabled: boolean;
 
   constructor(options?: MockSubscriptionOptions) {
     this.loggingDisabled = options?.disableLogging ?? false;
   }
 
-  subscribe(observer: SubscriptionObserver<FetchResult>) {
+  subscribe(observer: SubscriptionObserver<FetchResult<TData>>) {
     if (this.observer && !this.loggingDisabled) {
       console.warn(
         'Warning: mock-apollo-client - Mock subscription was already being used for a previous query. ' +
