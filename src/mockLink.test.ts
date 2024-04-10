@@ -10,6 +10,14 @@ describe('class MockLink', () => {
   const queryOne = gql`query One {one}`;
   const queryTwo = gql`query Two {two}`;
 
+  const queryOneOperation = { query: queryOne, variables: { a: 'one' } } as Partial<Operation> as Operation;
+
+  const createMockObserver = (): jest.Mocked<Observer<any>> => ({
+    next: jest.fn(),
+    error: jest.fn(),
+    complete: jest.fn(),
+  });
+
   beforeEach(() => {
     jest.spyOn(console, 'warn')
       .mockReset();
@@ -81,19 +89,6 @@ describe('class MockLink', () => {
   });
 
   describe('method request', () => {
-    const queryOneOperation = { query: queryOne, variables: { a: 'one' } } as Partial<Operation> as Operation;
-
-    const createMockObserver = (): jest.Mocked<Observer<any>> => ({
-      next: jest.fn(),
-      error: jest.fn(),
-      complete: jest.fn(),
-    });
-
-    it('throws when a handler is not defined for the query', () => {
-      expect(() => mockLink.request(queryOneOperation))
-        .toThrowError(`Request handler not defined for query: ${print(queryOne)}`)
-    });
-
     it('correctly executes the handler when the handler is defined as a promise and it and successfully resolves', async () => {
       const handler = jest.fn().mockResolvedValue({ data: 'Query one result' });
       mockLink.setRequestHandler(queryOne, handler);
@@ -242,4 +237,46 @@ describe('class MockLink', () => {
       expect(observer.complete).toBeCalledTimes(1);
     });
   });
+
+  describe('constructor option "missingHandlerPolicy"', () => {
+    it('when "throw-error" throws when a handler is not defined for the query', () => {
+      mockLink = new MockLink({missingHandlerPolicy: 'throw-error'})
+
+      expect(() => mockLink.request(queryOneOperation))
+        .toThrowError(`Request handler not defined for query: ${print(queryOne)}`)
+    });
+
+    it('when "warn-and-return-error" logs a warning when a handler is not defined for the query', async () => {
+      mockLink = new MockLink({missingHandlerPolicy: 'warn-and-return-error'})
+
+      const observable = mockLink.request(queryOneOperation);
+      const observer = createMockObserver();
+
+      observable.subscribe(observer);
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(observer.next).not.toBeCalled();
+      expect(observer.error).toBeCalled();
+      expect(observer.complete).not.toBeCalled();
+      expect(console.warn).toBeCalledTimes(1);
+      expect(console.warn).toBeCalledWith(`Request handler not defined for query: ${print(queryOne)}`);
+    });
+
+    it('when "return-error" returns an error when a handler is not defined for the query', async () => {
+      mockLink = new MockLink({missingHandlerPolicy: 'return-error'})
+
+      const observable = mockLink.request(queryOneOperation);
+      const observer = createMockObserver();
+
+      observable.subscribe(observer);
+
+      await new Promise(r => setTimeout(r, 0));
+
+      expect(observer.next).not.toBeCalled();
+      expect(observer.error).toBeCalledTimes(1);
+      expect(observer.error).toBeCalledWith(new Error(`Request handler not defined for query: ${print(queryOne)}`));
+      expect(observer.complete).not.toBeCalled();
+    });
+  })
 });
