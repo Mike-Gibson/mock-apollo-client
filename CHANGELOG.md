@@ -1,3 +1,13 @@
+# [1.3.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.3.0) (2024-04-10)
+
+### Features
+
+* Add new `missingHandlerPolicy` configuration option [#55](https://github.com/Mike-Gibson/mock-apollo-client/pull/55)
+
+### Chores
+
+* Update dev dependencies [#59](https://github.com/Mike-Gibson/mock-apollo-client/pull/59)
+
 # [1.2.1](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.2.1) (2022-08-13)
 
 ### Fixes
