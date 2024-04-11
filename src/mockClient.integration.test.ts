@@ -1,4 +1,5 @@
 import { ApolloQueryResult, gql, InMemoryCache } from '@apollo/client/core';
+import { print } from 'graphql';
 
 // Currently do not test against all valid peer dependency versions of apollo
 // Would be nice to have, but can't find an elegant way of doing it.
@@ -58,6 +59,18 @@ describe('MockClient integration tests', () => {
       it('throws when executing the query', () => {
         expect(() => mockClient.query({ query: queryTwo }))
           .toThrowError('Request handler not defined for query');
+      });
+
+      it('returns a promise which rejects and but warns in console when a handler not being defined and missingHandlerPolicy is "warn-and-return-error"', async () => {
+        mockClient = createMockClient({
+          missingHandlerPolicy: 'warn-and-return-error',
+        });
+
+        let promise =  mockClient.query({ query: queryTwo });
+
+        await expect(promise).rejects.toThrowError('Request handler not defined for query');
+        expect(console.warn).toBeCalledTimes(1);
+        expect(console.warn).toBeCalledWith(`Request handler not defined for query: ${print(queryTwo)}`);
       });
     });
   });
