@@ -1,3 +1,9 @@
+# [1.3.1](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.3.1) (2024-04-11)
+
+### Fixes
+
+* Fix issue - missingHandlerPolicy not passed to a MockLink when creating a client [#60](https://github.com/Mike-Gibson/mock-apollo-client/pull/60)
+
 # [1.3.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.3.0) (2024-04-10)
 
 ### Features
