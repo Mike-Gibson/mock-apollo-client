@@ -19,20 +19,21 @@ interface CustomOptions {
   missingHandlerPolicy?: MissingHandlerPolicy;
 }
 
-export type MockApolloClientOptions = Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> & CustomOptions | undefined;
+export type MockApolloClientOptions = (Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> & CustomOptions) | undefined;
 
-export const createMockClient = (options?: MockApolloClientOptions): MockApolloClient => {
+export const createMockClient = (options: MockApolloClientOptions = {}): MockApolloClient => {
   if ((options as any)?.link) {
     throw new Error('Providing link to use is not supported.');
   }
+  const { missingHandlerPolicy, ...restOptions } = options;
 
-  const mockLink = new MockLink();
+  const mockLink = new MockLink({ missingHandlerPolicy });
 
   const client = new ApolloClient({
     cache: new Cache({
       addTypename: false,
     }),
-    ...options,
+    ...restOptions,
     link: mockLink
   });
 
