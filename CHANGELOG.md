@@ -1,3 +1,13 @@
+# [1.4.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.4.0) (2025-10-18)
+
+### Features
+
+* Add `removeRequestHandler` method [#67](https://github.com/Mike-Gibson/mock-apollo-client/pull/67)
+
+### Chores
+
+* Extend test suite to run against apollo up to 3.13 [#68](https://github.com/Mike-Gibson/mock-apollo-client/pull/68)
+
 # [1.3.1](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.3.1) (2024-04-11)
 
 ### Fixes
