@@ -73,6 +73,31 @@ describe('MockClient integration tests', () => {
         expect(console.warn).toBeCalledWith(`Request handler not defined for query: ${print(queryTwo)}`);
       });
     });
+
+    describe('Given request handler has been removed', () => {
+      it('throws when executing the query', () => {
+        mockClient.setRequestHandler(queryTwo, jest.fn());
+        mockClient.removeRequestHandler(queryTwo);
+
+        expect(() => mockClient.query({ query: queryTwo }))
+          .toThrowError('Request handler not defined for query');
+      });
+
+      it('returns a promise which rejects and but warns in console when a handler not being defined and missingHandlerPolicy is "warn-and-return-error"', async () => {
+        mockClient = createMockClient({
+          missingHandlerPolicy: 'warn-and-return-error',
+        });
+
+        mockClient.setRequestHandler(queryTwo, jest.fn());
+        mockClient.removeRequestHandler(queryTwo);
+
+        let promise =  mockClient.query({ query: queryTwo });
+
+        await expect(promise).rejects.toThrowError('Request handler not defined for query');
+        expect(console.warn).toBeCalledTimes(1);
+        expect(console.warn).toBeCalledWith(`Request handler not defined for query: ${print(queryTwo)}`);
+      });
+    });
   });
 
   describe('Client directives', () => {

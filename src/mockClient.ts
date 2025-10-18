@@ -13,7 +13,10 @@ export type RequestHandlerResponse<T> =
   | { errors: any[] };
 
 export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
-  { setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void };
+  {
+    setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void;
+    removeRequestHandler: (query: DocumentNode) => void;
+  };
 
 interface CustomOptions {
   missingHandlerPolicy?: MissingHandlerPolicy;
@@ -39,6 +42,7 @@ export const createMockClient = (options: MockApolloClientOptions = {}): MockApo
 
   const mockMethods = {
     setRequestHandler: mockLink.setRequestHandler.bind(mockLink),
+    removeRequestHandler: mockLink.removeRequestHandler.bind(mockLink),
   };
 
   return Object.assign(client, mockMethods);

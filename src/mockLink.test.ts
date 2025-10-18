@@ -88,6 +88,69 @@ describe('class MockLink', () => {
     });
   });
 
+  describe('method removeRequestHandler', () => {
+    it('throws when a handler is not defined for the query', () => {
+      expect(() => mockLink.removeRequestHandler(queryOne))
+        .toThrow('Request handler not defined for query');
+
+      expect(console.warn).not.toBeCalled();
+    });
+
+    it('does not throw when a handler exists for the query', () => {
+      mockLink.setRequestHandler(queryOne, () => Promise.resolve({ data: {} }));
+
+      expect(() => {
+        mockLink.removeRequestHandler(queryOne);
+      }).not.toThrow();
+    });
+
+    describe('when queries contain @client directives', () => {
+      const clientSideQuery = gql`query One {one @client}`;
+      const mixedQuery = gql`query Three {a @client b}`;
+
+      it('does not throw, but warns, when removing client-side query', () => {
+        expect(() => {
+          mockLink.setRequestHandler(clientSideQuery, jest.fn());
+        }).not.toThrow();
+
+        expect(console.warn).toBeCalledTimes(1);
+        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+      });
+
+      it('throws when a handler for the mixed query is not defined', () => {
+        expect(() => {
+          mockLink.removeRequestHandler(mixedQuery);
+        }).toThrowError('Request handler not defined for query');
+
+        expect(console.warn).not.toBeCalled();
+      });
+
+      it('does not throw when a handler exists for the mixed query', () => {
+        mockLink.setRequestHandler(mixedQuery, jest.fn());
+
+        expect(() => {
+          mockLink.removeRequestHandler(mixedQuery);
+        }).not.toThrow();
+
+        expect(console.warn).not.toBeCalled();
+      });
+    });
+
+    describe('when queries contain __typename field', () => {
+      it('does not throw when removing handler', () => {
+        const query = gql`query Person { __typename name }`;
+
+        mockLink.setRequestHandler(query, jest.fn());
+
+        expect(() => {
+          mockLink.removeRequestHandler(query);
+        }).not.toThrow();
+
+        expect(console.warn).not.toBeCalled();
+      });
+    });
+  });
+
   describe('method request', () => {
     it('correctly executes the handler when the handler is defined as a promise and it and successfully resolves', async () => {
       const handler = jest.fn().mockResolvedValue({ data: 'Query one result' });
@@ -235,6 +298,13 @@ describe('class MockLink', () => {
       expect(observer.next).toBeCalledWith({ data: { __typename: 'Person', name: 'Bob' } });
       expect(observer.error).not.toBeCalled();
       expect(observer.complete).toBeCalledTimes(1);
+    });
+
+    it('throws when a previously defined handler has been removed', async () => {
+      mockLink.setRequestHandler(queryOne, jest.fn());
+      mockLink.removeRequestHandler(queryOne);
+
+      expect(() => mockLink.request(queryOneOperation)).toThrow('Request handler not defined for query');
     });
   });
 
