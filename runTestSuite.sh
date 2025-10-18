@@ -15,6 +15,11 @@ apolloVersions=(
   "@apollo/client@3.7.17"
   "@apollo/client@3.8.10"
   "@apollo/client@3.9.11"
+  "@apollo/client@3.10.8"
+  "@apollo/client@3.11.10"
+  "@apollo/client@3.12.11"
+  "@apollo/client@3.12.11"
+  "@apollo/client@3.13.9"
 )
 exitStatus=0
 
