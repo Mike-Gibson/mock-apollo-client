@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/mike-gibson/mock-apollo-client#readme",
   "devDependencies": {
-    "@apollo/client": "^3.9.11",
+    "@apollo/client": "3.13",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
     "graphql": "^15.8.0",
