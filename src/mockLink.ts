@@ -39,6 +39,23 @@ export class MockLink extends ApolloLink {
     this.requestHandlers[key] = handler;
   }
 
+  removeRequestHandler(requestQuery: DocumentNode): void {
+    const queryWithoutClientDirectives = removeClientSetsFromDocument(requestQuery);
+
+    if (queryWithoutClientDirectives === null) {
+      console.warn('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler is not registered.');
+      return;
+    }
+
+    const key = requestToKey(queryWithoutClientDirectives);
+
+    if (!this.requestHandlers[key]) {
+      throw new Error(`Request handler not defined for query: ${print(requestQuery)}`);
+    }
+
+    delete this.requestHandlers[key];
+  }
+
   request = (operation: Operation) => {
     const key = requestToKey(operation.query);
 

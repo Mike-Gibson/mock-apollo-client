@@ -339,3 +339,13 @@ const mockData = {
 
 const requestHandler = jest.fn().mockResolvedValue({ data: mockData });
 ```
+
+### Removing a handler
+
+It's possible to remove a previously registered handler for a query using `removeRequestHandler`.
+
+For example:
+
+```typescript
+mockApolloClient.removeRequestHandler(GET_DOG_QUERY);
+```
