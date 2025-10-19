@@ -1,30 +1,38 @@
-import { ApolloClientOptions, ApolloClient, DocumentNode } from '@apollo/client/core';
-import { InMemoryCache as Cache, NormalizedCacheObject } from '@apollo/client/cache';
+import {
+  ApolloClientOptions,
+  ApolloClient,
+  DocumentNode,
+} from '@apollo/client/core';
+import {
+  InMemoryCache as Cache,
+  NormalizedCacheObject,
+} from '@apollo/client/cache';
 import { MissingHandlerPolicy, MockLink } from './mockLink';
 import { IMockSubscription } from './mockSubscription';
 
-export type RequestHandler<TData = any, TVariables = any> =
-  (variables: TVariables) =>
-  | Promise<RequestHandlerResponse<TData>>
-  | IMockSubscription<TData>;
+export type RequestHandler<TData = any, TVariables = any> = (
+  variables: TVariables,
+) => Promise<RequestHandlerResponse<TData>> | IMockSubscription<TData>;
 
-export type RequestHandlerResponse<T> =
-  | { data: T }
-  | { errors: any[] };
+export type RequestHandlerResponse<T> = { data: T } | { errors: any[] };
 
-export type MockApolloClient = ApolloClient<NormalizedCacheObject> &
-  {
-    setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void;
-    removeRequestHandler: (query: DocumentNode) => void;
-  };
+export type MockApolloClient = ApolloClient<NormalizedCacheObject> & {
+  setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void;
+  removeRequestHandler: (query: DocumentNode) => void;
+};
 
 interface CustomOptions {
   missingHandlerPolicy?: MissingHandlerPolicy;
 }
 
-export type MockApolloClientOptions = (Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> & CustomOptions) | undefined;
+export type MockApolloClientOptions =
+  | (Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> &
+      CustomOptions)
+  | undefined;
 
-export const createMockClient = (options: MockApolloClientOptions = {}): MockApolloClient => {
+export const createMockClient = (
+  options: MockApolloClientOptions = {},
+): MockApolloClient => {
   if ((options as any)?.link) {
     throw new Error('Providing link to use is not supported.');
   }
@@ -37,7 +45,7 @@ export const createMockClient = (options: MockApolloClientOptions = {}): MockApo
       addTypename: false,
     }),
     ...restOptions,
-    link: mockLink
+    link: mockLink,
   });
 
   const mockMethods = {
@@ -46,4 +54,4 @@ export const createMockClient = (options: MockApolloClientOptions = {}): MockApo
   };
 
   return Object.assign(client, mockMethods);
-}
+};

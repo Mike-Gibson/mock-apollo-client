@@ -55,10 +55,9 @@ export const GET_DOG_QUERY = gql`
 `;
 
 export const Dog: React.FunctionComponent<{ name: string }> = ({ name }) => {
-  const { loading, error, data } = useQuery(
-    GET_DOG_QUERY,
-    { variables: { name } }
-  );
+  const { loading, error, data } = useQuery(GET_DOG_QUERY, {
+    variables: { name },
+  });
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error!</p>;
 
@@ -87,14 +86,16 @@ let wrapper: ReactWrapper;
 beforeEach(() => {
   const mockClient = createMockClient();
 
-  mockClient.setRequestHandler(
-    GET_DOG_QUERY,
-    () => Promise.resolve({ data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } } }));
+  mockClient.setRequestHandler(GET_DOG_QUERY, () =>
+    Promise.resolve({
+      data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } },
+    }),
+  );
 
   wrapper = mount(
     <ApolloProvider client={mockClient}>
       <Dog name="Rufus" />
-    </ApolloProvider>
+    </ApolloProvider>,
   );
 });
 
@@ -114,7 +115,9 @@ This test file does the following:
 The method `setRequestHandler` is passed a function to call when Apollo client executes a given query and it is called with the variables for that query, so it is easy to assert the component is behaving as expected using a spy library.
 
 ```typescript
-const queryHandler = jest.fn().mockResolvedValue({ data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } } });
+const queryHandler = jest.fn().mockResolvedValue({
+  data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } },
+});
 
 mockApolloClient.setRequestHandler(GET_DOG_QUERY, queryHandler);
 
@@ -135,17 +138,17 @@ A request handler returns a promise, so testing for loading state just requires 
 To simulate a GraphQL network error, the request handler should return a rejected promise. i.e.
 
 ```typescript
-mockApolloClient.setRequestHandler(
-  GET_DOG_QUERY,
-  () => Promise.reject(new Error('GraphQL Network Error')));
+mockApolloClient.setRequestHandler(GET_DOG_QUERY, () =>
+  Promise.reject(new Error('GraphQL Network Error')),
+);
 ```
 
 To simulate GraphQL errors, the request handler should return a Promise which resolves with an `errors` field. i.e.
 
 ```typescript
-mockApolloClient.setRequestHandler(
-  GET_DOG_QUERY,
-  () => Promise.resolve({ errors: [{ message: 'GraphQL Error' }] }));
+mockApolloClient.setRequestHandler(GET_DOG_QUERY, () =>
+  Promise.resolve({ errors: [{ message: 'GraphQL Error' }] }),
+);
 ```
 
 ### Mutations
@@ -156,6 +159,7 @@ Mutations can be tested the same way that queries are, by using `setRequestHandl
 
 Subscriptions can be tested, but require a different setup as they receive a stream of data.
 Consider the file below, which contains a single subscription and a component which is responsible for rendering the updated data:
+
 ```tsx
 // dogSubscription.tsx
 
@@ -172,11 +176,12 @@ export const SUBSCRIBE_DOG_DOCUMENT = gql`
   }
 `;
 
-export const DogSubscription: React.FunctionComponent<{ name: string }> = ({ name }) => {
-  const { loading, error, data } = useSubscription(
-    SUBSCRIBE_DOG_DOCUMENT,
-    { variables: { name } }
-  );
+export const DogSubscription: React.FunctionComponent<{ name: string }> = ({
+  name,
+}) => {
+  const { loading, error, data } = useSubscription(SUBSCRIBE_DOG_DOCUMENT, {
+    variables: { name },
+  });
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error!</p>;
 
@@ -195,7 +200,11 @@ To unit test this component using `mock-apollo-client`, the test file could look
 
 import { ApolloProvider } from '@apollo/client';
 import { mount, ReactWrapper } from 'enzyme';
-import { createMockClient, createMockSubscription, IMockSubscription } from 'mock-apollo-client';
+import {
+  createMockClient,
+  createMockSubscription,
+  IMockSubscription,
+} from 'mock-apollo-client';
 import { act } from 'react-dom/test-utils';
 import * as React from 'react';
 
@@ -208,26 +217,28 @@ beforeEach(() => {
   const mockClient = createMockClient();
   mockSubscription = createMockSubscription();
 
-  mockClient.setRequestHandler(
-    SUBSCRIBE_DOG_DOCUMENT,
-    () => mockSubscription);
+  mockClient.setRequestHandler(SUBSCRIBE_DOG_DOCUMENT, () => mockSubscription);
 
   wrapper = mount(
     <ApolloProvider client={mockClient}>
       <DogSubscription name="Rufus" />
-    </ApolloProvider>
+    </ApolloProvider>,
   );
 });
 
 it('renders the dog details', () => {
   act(() => {
-    mockSubscription.next({ data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 0 } } });
+    mockSubscription.next({
+      data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 0 } },
+    });
   });
 
   expect(wrapper.text()).toContain('Rufus has barked 0 time(s)');
 
   act(() => {
-    mockSubscription.next({ data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 1 } } });
+    mockSubscription.next({
+      data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 1 } },
+    });
   });
 
   expect(wrapper.text()).toContain('Rufus has barked 1 time(s)');
@@ -239,8 +250,9 @@ The subscription can be closed by calling `.complete` if necessary for the test.
 #### Errors
 
 You can also test error states by calling `.error` on the `mockSubscription` and passing errors as described in [Error States](#error-states):
+
 ```typescript
-mockSubscription.error(new Error('GraphQL Network Error'))
+mockSubscription.error(new Error('GraphQL Network Error'));
 ```
 
 #### Multiple subscriptions
@@ -268,6 +280,7 @@ subscriptions.forEach((s) => s.next({ data: { dog: { id: 1, name: 'Rufus', numbe
 The `createMockClient` method can be provided with the same constructor arguments that `ApolloClient` accepts which are used when instantiating the mock Apollo client.
 
 For example, to specify the cache (and possible types for fragment matching) that should be used:
+
 ```typescript
 const cache = new InMemoryCache({
   possibleTypes: myPossibleTypes,
@@ -279,6 +292,7 @@ const mockClient = createMockClient({ cache });
 Additionally, you can specify a `missingHandlerPolicy` to define the behavior of the mock client when a request handler for a particular operation is not found.
 
 The `missingHandlerPolicy` accepts one of three string values:
+
 - `'throw-error'`: The client throws an error when it encounters a missing handler.
 - `'warn-and-return-error'`: The client logs a warning message in the console and returns an error.
 - `'return-error'`: The client returns an error without any warning message.
@@ -286,7 +300,9 @@ The `missingHandlerPolicy` accepts one of three string values:
 Here's an example of how you can set the `missingHandlerPolicy`:
 
 ```typescript
-const mockClient = createMockClient({ missingHandlerPolicy: 'warn-and-return-error' });
+const mockClient = createMockClient({
+  missingHandlerPolicy: 'warn-and-return-error',
+});
 ```
 
 In this example, if a request handler for a given operation is not found, the client will log a warning message to the console and then return an error.

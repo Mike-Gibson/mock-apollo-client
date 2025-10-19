@@ -7,10 +7,21 @@ import { createMockSubscription } from './mockSubscription';
 describe('class MockLink', () => {
   let mockLink: MockLink;
 
-  const queryOne = gql`query One {one}`;
-  const queryTwo = gql`query Two {two}`;
+  const queryOne = gql`
+    query One {
+      one
+    }
+  `;
+  const queryTwo = gql`
+    query Two {
+      two
+    }
+  `;
 
-  const queryOneOperation = { query: queryOne, variables: { a: 'one' } } as Partial<Operation> as Operation;
+  const queryOneOperation = {
+    query: queryOne,
+    variables: { a: 'one' },
+  } as Partial<Operation> as Operation;
 
   const createMockObserver = (): jest.Mocked<Observer<any>> => ({
     next: jest.fn(),
@@ -19,8 +30,7 @@ describe('class MockLink', () => {
   });
 
   beforeEach(() => {
-    jest.spyOn(console, 'warn')
-      .mockReset();
+    jest.spyOn(console, 'warn').mockReset();
 
     mockLink = new MockLink();
   });
@@ -29,23 +39,42 @@ describe('class MockLink', () => {
     it('throws when a handler has already been defined for a query', () => {
       mockLink.setRequestHandler(queryOne, () => Promise.resolve({ data: {} }));
 
-      expect(() => mockLink.setRequestHandler(queryOne, () => <any>{}))
-        .toThrow('Request handler already defined for query');
+      expect(() => mockLink.setRequestHandler(queryOne, () => <any>{})).toThrow(
+        'Request handler already defined for query',
+      );
 
       expect(console.warn).not.toHaveBeenCalled();
     });
 
     it('does not throw when two handlers are added for two different queries', () => {
       expect(() => {
-        mockLink.setRequestHandler(queryOne, () => Promise.resolve({ data: {} }));
-        mockLink.setRequestHandler(queryTwo, () => Promise.resolve({ data: {} }));
+        mockLink.setRequestHandler(queryOne, () =>
+          Promise.resolve({ data: {} }),
+        );
+        mockLink.setRequestHandler(queryTwo, () =>
+          Promise.resolve({ data: {} }),
+        );
       }).not.toThrow();
     });
 
     describe('when queries contain @client directives', () => {
-      const clientSideQuery = gql`query One {one @client}`;
-      const mixedQueryOne = gql`query Three {a @client b}`;
-      const mixedQueryTwo = gql`query Four {c @client d}`;
+      const clientSideQuery = gql`
+        query One {
+          one @client
+        }
+      `;
+      const mixedQueryOne = gql`
+        query Three {
+          a @client
+          b
+        }
+      `;
+      const mixedQueryTwo = gql`
+        query Four {
+          c @client
+          d
+        }
+      `;
 
       it('does not throw, but warns, when adding client-side query', () => {
         expect(() => {
@@ -53,7 +82,9 @@ describe('class MockLink', () => {
         }).not.toThrow();
 
         expect(console.warn).toHaveBeenCalledTimes(1);
-        expect(console.warn).toHaveBeenCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+        expect(console.warn).toHaveBeenCalledWith(
+          'Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.',
+        );
       });
 
       it('throws when the same mixed query is added twice', () => {
@@ -79,7 +110,12 @@ describe('class MockLink', () => {
 
     describe('when queries contain __typename field', () => {
       it('does not throw when adding query', () => {
-        const query = gql`query Person { __typename name }`;
+        const query = gql`
+          query Person {
+            __typename
+            name
+          }
+        `;
 
         expect(() => {
           mockLink.setRequestHandler(query, jest.fn());
@@ -90,8 +126,9 @@ describe('class MockLink', () => {
 
   describe('method removeRequestHandler', () => {
     it('throws when a handler is not defined for the query', () => {
-      expect(() => mockLink.removeRequestHandler(queryOne))
-        .toThrow('Request handler not defined for query');
+      expect(() => mockLink.removeRequestHandler(queryOne)).toThrow(
+        'Request handler not defined for query',
+      );
 
       expect(console.warn).not.toHaveBeenCalled();
     });
@@ -105,8 +142,17 @@ describe('class MockLink', () => {
     });
 
     describe('when queries contain @client directives', () => {
-      const clientSideQuery = gql`query One {one @client}`;
-      const mixedQuery = gql`query Three {a @client b}`;
+      const clientSideQuery = gql`
+        query One {
+          one @client
+        }
+      `;
+      const mixedQuery = gql`
+        query Three {
+          a @client
+          b
+        }
+      `;
 
       it('does not throw, but warns, when removing client-side query', () => {
         expect(() => {
@@ -114,7 +160,9 @@ describe('class MockLink', () => {
         }).not.toThrow();
 
         expect(console.warn).toHaveBeenCalledTimes(1);
-        expect(console.warn).toHaveBeenCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+        expect(console.warn).toHaveBeenCalledWith(
+          'Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.',
+        );
       });
 
       it('throws when a handler for the mixed query is not defined', () => {
@@ -138,7 +186,12 @@ describe('class MockLink', () => {
 
     describe('when queries contain __typename field', () => {
       it('does not throw when removing handler', () => {
-        const query = gql`query Person { __typename name }`;
+        const query = gql`
+          query Person {
+            __typename
+            name
+          }
+        `;
 
         mockLink.setRequestHandler(query, jest.fn());
 
@@ -161,7 +214,7 @@ describe('class MockLink', () => {
 
       observable.subscribe(observer);
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith({ a: 'one' });
@@ -181,7 +234,7 @@ describe('class MockLink', () => {
 
       observable.subscribe(observer);
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith({ a: 'one' });
@@ -201,16 +254,22 @@ describe('class MockLink', () => {
 
       observable.subscribe(observer);
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(observer.next).not.toHaveBeenCalled();
       expect(observer.error).toHaveBeenCalledTimes(1);
-      expect(observer.error).toHaveBeenCalledWith(new Error("Request handler must return a promise or subscription. Received 'undefined'."));
+      expect(observer.error).toHaveBeenCalledWith(
+        new Error(
+          "Request handler must return a promise or subscription. Received 'undefined'.",
+        ),
+      );
       expect(observer.complete).not.toHaveBeenCalled();
     });
 
     it('returns an error when the handler is defined but throws', async () => {
-      const handler = jest.fn(() => { throw new Error('Error in handler') });
+      const handler = jest.fn(() => {
+        throw new Error('Error in handler');
+      });
       mockLink.setRequestHandler(queryOne, handler);
       const observer = createMockObserver();
 
@@ -218,11 +277,15 @@ describe('class MockLink', () => {
 
       observable.subscribe(observer);
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(observer.next).not.toHaveBeenCalled();
       expect(observer.error).toHaveBeenCalledTimes(1);
-      expect(observer.error).toHaveBeenCalledWith(new Error('Unexpected error whilst calling request handler: Error in handler'));
+      expect(observer.error).toHaveBeenCalledWith(
+        new Error(
+          'Unexpected error whilst calling request handler: Error in handler',
+        ),
+      );
       expect(observer.complete).not.toHaveBeenCalled();
     });
 
@@ -239,7 +302,7 @@ describe('class MockLink', () => {
       subscription.next({ data: 'Query one result' });
       subscription.next({ data: 'Query one result' });
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith({ a: 'one' });
@@ -249,7 +312,7 @@ describe('class MockLink', () => {
       expect(observer.error).not.toHaveBeenCalled();
       expect(observer.complete).not.toHaveBeenCalledTimes(1);
       expect(subscription.closed).toBe(false);
-    })
+    });
 
     it('correctly executes the handler when handler is defined as a subscription and it produces an error', async () => {
       const subscription = createMockSubscription();
@@ -263,7 +326,7 @@ describe('class MockLink', () => {
 
       subscription.error('Test error');
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith({ a: 'one' });
@@ -276,26 +339,41 @@ describe('class MockLink', () => {
     });
 
     it('correctly executes the handler when query contains __typename field', async () => {
-      const personQueryWithTypename = gql`query Person { __typename name}`;
-      const personQueryWithoutTypename = gql`query Person { name }`;
+      const personQueryWithTypename = gql`
+        query Person {
+          __typename
+          name
+        }
+      `;
+      const personQueryWithoutTypename = gql`
+        query Person {
+          name
+        }
+      `;
 
-      const handler = jest.fn().mockResolvedValue({ data: { __typename: 'Person', name: 'Bob' } });
+      const handler = jest
+        .fn()
+        .mockResolvedValue({ data: { __typename: 'Person', name: 'Bob' } });
       mockLink.setRequestHandler(personQueryWithoutTypename, handler);
       const observer = createMockObserver();
 
-      const queryOperation = { query: personQueryWithTypename } as Partial<Operation> as Operation;
+      const queryOperation = {
+        query: personQueryWithTypename,
+      } as Partial<Operation> as Operation;
 
       const observable = mockLink.request(queryOperation);
 
       observable.subscribe(observer);
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(handler).toHaveBeenCalledTimes(1);
       expect(handler).toHaveBeenCalledWith(undefined);
 
       expect(observer.next).toHaveBeenCalledTimes(1);
-      expect(observer.next).toHaveBeenCalledWith({ data: { __typename: 'Person', name: 'Bob' } });
+      expect(observer.next).toHaveBeenCalledWith({
+        data: { __typename: 'Person', name: 'Bob' },
+      });
       expect(observer.error).not.toHaveBeenCalled();
       expect(observer.complete).toHaveBeenCalledTimes(1);
     });
@@ -304,49 +382,58 @@ describe('class MockLink', () => {
       mockLink.setRequestHandler(queryOne, jest.fn());
       mockLink.removeRequestHandler(queryOne);
 
-      expect(() => mockLink.request(queryOneOperation)).toThrow('Request handler not defined for query');
+      expect(() => mockLink.request(queryOneOperation)).toThrow(
+        'Request handler not defined for query',
+      );
     });
   });
 
   describe('constructor option "missingHandlerPolicy"', () => {
     it('when "throw-error" throws when a handler is not defined for the query', () => {
-      mockLink = new MockLink({missingHandlerPolicy: 'throw-error'})
+      mockLink = new MockLink({ missingHandlerPolicy: 'throw-error' });
 
-      expect(() => mockLink.request(queryOneOperation))
-        .toThrow(`Request handler not defined for query: ${print(queryOne)}`)
+      expect(() => mockLink.request(queryOneOperation)).toThrow(
+        `Request handler not defined for query: ${print(queryOne)}`,
+      );
     });
 
     it('when "warn-and-return-error" logs a warning when a handler is not defined for the query', async () => {
-      mockLink = new MockLink({missingHandlerPolicy: 'warn-and-return-error'})
+      mockLink = new MockLink({
+        missingHandlerPolicy: 'warn-and-return-error',
+      });
 
       const observable = mockLink.request(queryOneOperation);
       const observer = createMockObserver();
 
       observable.subscribe(observer);
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(observer.next).not.toHaveBeenCalled();
       expect(observer.error).toHaveBeenCalled();
       expect(observer.complete).not.toHaveBeenCalled();
       expect(console.warn).toHaveBeenCalledTimes(1);
-      expect(console.warn).toHaveBeenCalledWith(`Request handler not defined for query: ${print(queryOne)}`);
+      expect(console.warn).toHaveBeenCalledWith(
+        `Request handler not defined for query: ${print(queryOne)}`,
+      );
     });
 
     it('when "return-error" returns an error when a handler is not defined for the query', async () => {
-      mockLink = new MockLink({missingHandlerPolicy: 'return-error'})
+      mockLink = new MockLink({ missingHandlerPolicy: 'return-error' });
 
       const observable = mockLink.request(queryOneOperation);
       const observer = createMockObserver();
 
       observable.subscribe(observer);
 
-      await new Promise(r => setTimeout(r, 0));
+      await new Promise((r) => setTimeout(r, 0));
 
       expect(observer.next).not.toHaveBeenCalled();
       expect(observer.error).toHaveBeenCalledTimes(1);
-      expect(observer.error).toHaveBeenCalledWith(new Error(`Request handler not defined for query: ${print(queryOne)}`));
+      expect(observer.error).toHaveBeenCalledWith(
+        new Error(`Request handler not defined for query: ${print(queryOne)}`),
+      );
       expect(observer.complete).not.toHaveBeenCalled();
     });
-  })
+  });
 });

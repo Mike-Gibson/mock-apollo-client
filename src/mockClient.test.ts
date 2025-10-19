@@ -34,7 +34,9 @@ describe('MockClient tests', () => {
         link: {},
       };
 
-      expect(() => createMockClient(options)).toThrow('Providing link to use is not supported.');
+      expect(() => createMockClient(options)).toThrow(
+        'Providing link to use is not supported.',
+      );
     });
   });
 });
