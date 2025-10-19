@@ -1,5 +1,4 @@
-import { ApolloClient } from '@apollo/client/core';
-import { InMemoryCache } from '@apollo/client/cache';
+import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { MockLink } from './mockLink';
 
 import { createMockClient } from './mockClient';

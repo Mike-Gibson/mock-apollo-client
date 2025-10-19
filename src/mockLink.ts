@@ -1,17 +1,12 @@
-import {
-  ApolloLink,
-  DocumentNode,
-  Observable,
-  Operation,
-  FetchResult,
-} from '@apollo/client/core';
-import { print, visit } from 'graphql';
+import { ApolloLink, DocumentNode, Observable } from '@apollo/client';
+import { print } from '@apollo/client/utilities';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
+import { IMockSubscription, MockSubscription } from './mockSubscription';
 import {
   removeClientSetsFromDocument,
   removeConnectionDirectiveFromDocument,
-} from '@apollo/client/utilities';
-import { IMockSubscription, MockSubscription } from './mockSubscription';
+  stripTypenames,
+} from './directiveUtils';
 
 export type MissingHandlerPolicy =
   | 'throw-error'
@@ -33,20 +28,20 @@ export class MockLink extends ApolloLink {
   }
 
   private readonly missingHandlerPolicy: MissingHandlerPolicy;
-  private requestHandlers: Record<string, RequestHandler | undefined> = {};
+  private readonly requestHandlers: Record<string, RequestHandler | undefined> =
+    {};
 
   setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
-    const queryWithoutClientDirectives =
-      removeClientSetsFromDocument(requestQuery);
+    const queryWithoutDirectives = removeClientSetsFromDocument(requestQuery);
 
-    if (queryWithoutClientDirectives === null) {
-      console.warn(
-        'Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.',
+    if (queryWithoutDirectives === null) {
+      writeWarning(
+        'The query is entirely client side (using @client directives) so the request handler will not be registered.',
       );
       return;
     }
 
-    const key = requestToKey(queryWithoutClientDirectives);
+    const key = requestToKey(queryWithoutDirectives);
 
     if (this.requestHandlers[key]) {
       throw new Error(
@@ -62,8 +57,8 @@ export class MockLink extends ApolloLink {
       removeClientSetsFromDocument(requestQuery);
 
     if (queryWithoutClientDirectives === null) {
-      console.warn(
-        'Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler is not registered.',
+      writeWarning(
+        'The query is entirely client side (using @client directives) so the request handler is not registered.',
       );
       return;
     }
@@ -79,21 +74,26 @@ export class MockLink extends ApolloLink {
     delete this.requestHandlers[key];
   }
 
-  request = (operation: Operation) => {
+  request = (operation: ApolloLink.Operation) => {
     const key = requestToKey(operation.query);
 
     const handler = this.requestHandlers[key];
 
+    // TODO: THink can remove this - should always return observable - doesn't change behaviour
     if (!handler && this.missingHandlerPolicy === 'throw-error') {
-      throw new Error(getNotDefinedHandlerMessage(operation));
+      const errorMessage = getNotDefinedHandlerMessage(operation);
+      throw new Error(errorMessage);
     }
 
-    return new Observable<FetchResult>((observer) => {
+    return new Observable<ApolloLink.Result>((observer) => {
       if (!handler) {
+        const errorMessage = getNotDefinedHandlerMessage(operation);
+
         if (this.missingHandlerPolicy === 'warn-and-return-error') {
-          console.warn(getNotDefinedHandlerMessage(operation));
+          writeWarning(errorMessage);
         }
-        throw new Error(getNotDefinedHandlerMessage(operation));
+
+        throw new Error(errorMessage);
       }
 
       let result:
@@ -133,19 +133,13 @@ export class MockLink extends ApolloLink {
 }
 
 const normalise = (requestQuery: DocumentNode): DocumentNode => {
-  let stripped = removeConnectionDirectiveFromDocument(requestQuery);
+  let stripped: DocumentNode | null =
+    removeConnectionDirectiveFromDocument(requestQuery);
 
   stripped = stripped !== null ? stripTypenames(stripped) : null;
 
   return stripped === null ? requestQuery : stripped;
 };
-
-const stripTypenames = (document: DocumentNode): DocumentNode | null =>
-  visit(document, {
-    Field: {
-      enter: (node) => (node.name.value === '__typename' ? null : undefined),
-    },
-  });
 
 const requestToKey = (query: DocumentNode): string => {
   const normalised = normalise(query);
@@ -162,6 +156,10 @@ const isSubscription = (
 ): maybeSubscription is MockSubscription<any> =>
   maybeSubscription && maybeSubscription instanceof MockSubscription;
 
-const getNotDefinedHandlerMessage = (operation: Operation) => {
+const getNotDefinedHandlerMessage = (operation: ApolloLink.Operation) => {
   return `Request handler not defined for query: ${print(operation.query)}`;
+};
+
+const writeWarning = (message: string) => {
+  console.warn(`Warning: mock-apollo-client - ${message}`);
 };

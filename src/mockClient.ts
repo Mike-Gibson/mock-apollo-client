@@ -1,12 +1,8 @@
 import {
-  ApolloClientOptions,
   ApolloClient,
   DocumentNode,
-} from '@apollo/client/core';
-import {
   InMemoryCache as Cache,
-  NormalizedCacheObject,
-} from '@apollo/client/cache';
+} from '@apollo/client';
 import { MissingHandlerPolicy, MockLink } from './mockLink';
 import { IMockSubscription } from './mockSubscription';
 
@@ -16,7 +12,7 @@ export type RequestHandler<TData = any, TVariables = any> = (
 
 export type RequestHandlerResponse<T> = { data: T } | { errors: any[] };
 
-export type MockApolloClient = ApolloClient<NormalizedCacheObject> & {
+export type MockApolloClient = ApolloClient & {
   setRequestHandler: (query: DocumentNode, handler: RequestHandler) => void;
   removeRequestHandler: (query: DocumentNode) => void;
 };
@@ -26,8 +22,7 @@ interface CustomOptions {
 }
 
 export type MockApolloClientOptions =
-  | (Partial<Omit<ApolloClientOptions<NormalizedCacheObject>, 'link'>> &
-      CustomOptions)
+  | (Partial<Omit<ApolloClient.Options, 'link'>> & CustomOptions)
   | undefined;
 
 export const createMockClient = (
@@ -36,21 +31,24 @@ export const createMockClient = (
   if ((options as any)?.link) {
     throw new Error('Providing link to use is not supported.');
   }
-  const { missingHandlerPolicy, ...restOptions } = options;
+  const {
+    missingHandlerPolicy,
+    cache: cacheFromOptions,
+    ...restOptions
+  } = options;
 
-  const mockLink = new MockLink({ missingHandlerPolicy });
+  const cache = cacheFromOptions ?? new Cache();
+  const link = new MockLink({ missingHandlerPolicy });
 
   const client = new ApolloClient({
-    cache: new Cache({
-      addTypename: false,
-    }),
     ...restOptions,
-    link: mockLink,
+    cache,
+    link,
   });
 
   const mockMethods = {
-    setRequestHandler: mockLink.setRequestHandler.bind(mockLink),
-    removeRequestHandler: mockLink.removeRequestHandler.bind(mockLink),
+    setRequestHandler: link.setRequestHandler.bind(link),
+    removeRequestHandler: link.removeRequestHandler.bind(link),
   };
 
   return Object.assign(client, mockMethods);

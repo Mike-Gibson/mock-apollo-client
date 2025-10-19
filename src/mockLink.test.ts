@@ -1,8 +1,9 @@
-import { gql, Operation, Observer } from '@apollo/client/core';
-import { print } from 'graphql';
+import { ApolloLink, gql } from '@apollo/client';
+import { print } from '@apollo/client/utilities';
 
 import { MockLink } from './mockLink';
 import { createMockSubscription } from './mockSubscription';
+import { Observer } from 'rxjs';
 
 describe('class MockLink', () => {
   let mockLink: MockLink;
@@ -21,7 +22,7 @@ describe('class MockLink', () => {
   const queryOneOperation = {
     query: queryOne,
     variables: { a: 'one' },
-  } as Partial<Operation> as Operation;
+  } as Partial<ApolloLink.Operation> as ApolloLink.Operation;
 
   const createMockObserver = (): jest.Mocked<Observer<any>> => ({
     next: jest.fn(),
@@ -311,7 +312,6 @@ describe('class MockLink', () => {
       expect(observer.next).toHaveBeenCalledWith({ data: 'Query one result' });
       expect(observer.error).not.toHaveBeenCalled();
       expect(observer.complete).not.toHaveBeenCalledTimes(1);
-      expect(subscription.closed).toBe(false);
     });
 
     it('correctly executes the handler when handler is defined as a subscription and it produces an error', async () => {
@@ -335,18 +335,12 @@ describe('class MockLink', () => {
       expect(observer.error).toHaveBeenCalledTimes(1);
       expect(observer.error).toHaveBeenCalledWith('Test error');
       expect(observer.complete).not.toHaveBeenCalled();
-      expect(subscription.closed).toBe(true);
     });
 
-    it('correctly executes the handler when query contains __typename field', async () => {
+    it('correctly executes the handler when handler is defined as a subscription and query contains __typename field', async () => {
       const personQueryWithTypename = gql`
         query Person {
           __typename
-          name
-        }
-      `;
-      const personQueryWithoutTypename = gql`
-        query Person {
           name
         }
       `;
@@ -354,12 +348,12 @@ describe('class MockLink', () => {
       const handler = jest
         .fn()
         .mockResolvedValue({ data: { __typename: 'Person', name: 'Bob' } });
-      mockLink.setRequestHandler(personQueryWithoutTypename, handler);
+      mockLink.setRequestHandler(personQueryWithTypename, handler);
       const observer = createMockObserver();
 
       const queryOperation = {
         query: personQueryWithTypename,
-      } as Partial<Operation> as Operation;
+      } as Partial<ApolloLink.Operation> as ApolloLink.Operation;
 
       const observable = mockLink.request(queryOperation);
 
@@ -414,7 +408,7 @@ describe('class MockLink', () => {
       expect(observer.complete).not.toHaveBeenCalled();
       expect(console.warn).toHaveBeenCalledTimes(1);
       expect(console.warn).toHaveBeenCalledWith(
-        `Request handler not defined for query: ${print(queryOne)}`,
+        `Warning: mock-apollo-client - Request handler not defined for query: ${print(queryOne)}`,
       );
     });
 

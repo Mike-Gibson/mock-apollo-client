@@ -1,4 +1,4 @@
-import { ApolloQueryResult, gql, InMemoryCache } from '@apollo/client/core';
+import { ApolloClient, gql, InMemoryCache } from '@apollo/client';
 import { print } from 'graphql';
 
 // Currently do not test against all valid peer dependency versions of apollo
@@ -6,6 +6,8 @@ import { print } from 'graphql';
 
 import { createMockClient, MockApolloClient } from './mockClient';
 import { createMockSubscription, IMockSubscription } from './mockSubscription';
+import { LocalState } from '@apollo/client/local-state';
+import { CombinedGraphQLErrors } from '@apollo/client';
 
 describe('MockClient integration tests', () => {
   let mockClient: MockApolloClient;
@@ -45,7 +47,7 @@ describe('MockClient integration tests', () => {
     });
 
     describe('Given request handler is defined', () => {
-      let promise: Promise<ApolloQueryResult<any>>;
+      let promise: Promise<ApolloClient.QueryResult<any>>;
 
       beforeEach(() => {
         promise = mockClient.query({ query: queryOne });
@@ -71,10 +73,10 @@ describe('MockClient integration tests', () => {
     });
 
     describe('Given request handler is not defined', () => {
-      it('throws when executing the query', () => {
-        expect(() => mockClient.query({ query: queryTwo })).toThrow(
-          'Request handler not defined for query',
-        );
+      it('throws when executing the query', async () => {
+        await expect(() =>
+          mockClient.query({ query: queryTwo }),
+        ).rejects.toThrow('Request handler not defined for query');
       });
 
       it('returns a promise which rejects and but warns in console when a handler not being defined and missingHandlerPolicy is "warn-and-return-error"', async () => {
@@ -89,19 +91,19 @@ describe('MockClient integration tests', () => {
         );
         expect(console.warn).toHaveBeenCalledTimes(1);
         expect(console.warn).toHaveBeenCalledWith(
-          `Request handler not defined for query: ${print(queryTwo)}`,
+          `Warning: mock-apollo-client - Request handler not defined for query: ${print(queryTwo)}`,
         );
       });
     });
 
     describe('Given request handler has been removed', () => {
-      it('throws when executing the query', () => {
+      it('throws when executing the query', async () => {
         mockClient.setRequestHandler(queryTwo, jest.fn());
         mockClient.removeRequestHandler(queryTwo);
 
-        expect(() => mockClient.query({ query: queryTwo })).toThrow(
-          'Request handler not defined for query',
-        );
+        await expect(() =>
+          mockClient.query({ query: queryTwo }),
+        ).rejects.toThrow('Request handler not defined for query');
       });
 
       it('returns a promise which rejects and but warns in console when a handler not being defined and missingHandlerPolicy is "warn-and-return-error"', async () => {
@@ -119,20 +121,89 @@ describe('MockClient integration tests', () => {
         );
         expect(console.warn).toHaveBeenCalledTimes(1);
         expect(console.warn).toHaveBeenCalledWith(
-          `Request handler not defined for query: ${print(queryTwo)}`,
+          `Warning: mock-apollo-client - Request handler not defined for query: ${print(queryTwo)}`,
+        );
+      });
+    });
+  });
+
+  describe('__typename behaviour', () => {
+    const queryWithoutTypename = gql`
+      query TestQuery {
+        people {
+          id
+          name
+        }
+      }
+    `;
+    const queryWithTypename = gql`
+      query TestQuery {
+        people {
+          __typename
+          id
+          name
+        }
+      }
+    `;
+
+    let requestHandler: jest.Mock;
+
+    beforeEach(() => {
+      mockClient = createMockClient();
+
+      requestHandler = jest.fn().mockResolvedValue({
+        data: {
+          people: [
+            {
+              id: 1,
+              name: 'John',
+            },
+          ],
+        },
+      });
+    });
+
+    describe('Given request handler is registered against query with __typename field', () => {
+      beforeEach(() => {
+        mockClient.setRequestHandler(queryWithTypename, requestHandler);
+      });
+
+      it('returns the expected result', async () => {
+        const actual = await mockClient.query({
+          query: queryWithTypename,
+        });
+
+        expect(actual).toEqual(
+          expect.objectContaining({
+            data: { people: [{ id: 1, name: 'John' }] },
+          }),
+        );
+      });
+    });
+
+    describe('Given request handler is registered against query without __typename field', () => {
+      beforeEach(() => {
+        mockClient.setRequestHandler(queryWithoutTypename, requestHandler);
+      });
+
+      it('returns the expected result', async () => {
+        const actual = await mockClient.query({
+          query: queryWithoutTypename,
+        });
+
+        expect(actual).toEqual(
+          expect.objectContaining({
+            data: { people: [{ id: 1, name: 'John' }] },
+          }),
         );
       });
     });
   });
 
   describe('Client directives', () => {
-    // Note: React apollo 3 no longer passes @client directives down to the link (regardless of whether
-    // client-side resolvers have been configured).
-    // See https://github.com/apollographql/apollo-client/blob/master/CHANGELOG.md#apollo-client-300
-
     describe('Given entire query is client-side and client side resolvers exist', () => {
       const query = gql`
-        {
+        query A {
           visibilityFilter @client
         }
       `;
@@ -141,11 +212,13 @@ describe('MockClient integration tests', () => {
 
       beforeEach(() => {
         mockClient = createMockClient({
-          resolvers: {
-            Query: {
-              visibilityFilter: () => 'client resolver data',
+          localState: new LocalState({
+            resolvers: {
+              Query: {
+                visibilityFilter: () => 'client resolver data',
+              },
             },
-          },
+          }),
         });
 
         requestHandler = jest.fn().mockResolvedValue({
@@ -174,7 +247,7 @@ describe('MockClient integration tests', () => {
 
     describe('Given entire query is client-side and client side resolvers do not exist', () => {
       const query = gql`
-        {
+        query A {
           visibilityFilter @client
         }
       `;
@@ -183,7 +256,9 @@ describe('MockClient integration tests', () => {
 
       beforeEach(() => {
         mockClient = createMockClient({
-          resolvers: undefined,
+          localState: new LocalState({
+            resolvers: undefined,
+          }),
         });
 
         requestHandler = jest.fn().mockResolvedValue({
@@ -203,14 +278,14 @@ describe('MockClient integration tests', () => {
 
         const result = await mockClient.query({ query });
 
-        expect(result.data).toEqual({});
+        expect(result.data).toEqual({ visibilityFilter: null });
         expect(requestHandler).not.toHaveBeenCalled();
       });
     });
 
     describe('Given part of the query is client-side and client side resolvers exist', () => {
       const query = gql`
-        query User {
+        query UserQuery {
           user {
             id
             name
@@ -223,15 +298,19 @@ describe('MockClient integration tests', () => {
 
       beforeEach(() => {
         mockClient = createMockClient({
-          resolvers: {
-            Query: {
-              user: () => ({ isLoggedIn: true }),
+          localState: new LocalState({
+            resolvers: {
+              User: {
+                isLoggedIn: () => true,
+              },
             },
-          },
+          }),
         });
 
         requestHandler = jest.fn().mockResolvedValue({
-          data: { user: { id: 1, name: 'bob', isLoggedIn: false } },
+          data: {
+            user: { __typename: 'User', id: 1, name: 'bob' },
+          },
         });
       });
 
@@ -243,7 +322,7 @@ describe('MockClient integration tests', () => {
         const result = await mockClient.query({ query });
 
         expect(result.data).toEqual({
-          user: { id: 1, name: 'bob', isLoggedIn: true },
+          user: { __typename: 'User', id: 1, name: 'bob', isLoggedIn: true },
         });
         expect(requestHandler).toHaveBeenCalledTimes(1);
         expect(console.warn).not.toHaveBeenCalled();
@@ -265,11 +344,15 @@ describe('MockClient integration tests', () => {
 
       beforeEach(() => {
         mockClient = createMockClient({
-          resolvers: undefined,
+          localState: new LocalState({
+            resolvers: undefined,
+          }),
         });
 
         requestHandler = jest.fn().mockResolvedValue({
-          data: { user: { id: 1, name: 'bob', isLoggedIn: false } },
+          data: {
+            user: { __typename: 'User', id: 1, name: 'bob' },
+          },
         });
       });
 
@@ -281,7 +364,7 @@ describe('MockClient integration tests', () => {
         const result = await mockClient.query({ query });
 
         expect(result.data).toEqual({
-          user: { id: 1, name: 'bob', isLoggedIn: false },
+          user: { __typename: 'User', id: 1, name: 'bob', isLoggedIn: null },
         });
         expect(requestHandler).toHaveBeenCalledTimes(1);
       });
@@ -352,7 +435,9 @@ describe('MockClient integration tests', () => {
 
         const result = await mockClient.query({ query });
 
-        expect(result.data).toEqual({ user: { id: 1, name: 'Bob' } });
+        expect(result.data).toEqual({
+          user: { __typename: 'User', id: 1, name: 'Bob' },
+        });
         expect(requestHandler).toHaveBeenCalledTimes(1);
 
         expect(console.warn).not.toHaveBeenCalled();
@@ -531,12 +616,12 @@ describe('MockClient integration tests', () => {
 
   describe('Subscriptions', () => {
     const queryOne = gql`
-      query One {
+      subscription One {
         one
       }
     `;
     const queryTwo = gql`
-      query Two {
+      subscription Two {
         two
       }
     `;
@@ -610,10 +695,14 @@ describe('MockClient integration tests', () => {
           errors: [{ message: 'GraphQL Error' }],
         });
 
-        expect(onNext).not.toHaveBeenCalled();
-        expect(onError).toHaveBeenCalled();
-        expect(onError).toHaveBeenCalledWith(new Error('GraphQL Error'));
+        expect(onNext).toHaveBeenCalledTimes(1);
+        expect(onNext).toHaveBeenCalledWith({
+          error: expect.any(CombinedGraphQLErrors),
+        });
+        expect(onError).not.toHaveBeenCalled();
         expect(onComplete).not.toHaveBeenCalled();
+
+        expect(console.warn).not.toHaveBeenCalled();
       });
 
       it('returns an observable which produces the correct values until a GraphQL network error is returned', async () => {
@@ -634,12 +723,11 @@ describe('MockClient integration tests', () => {
 
         mockSubscription.error(new Error('GraphQL Network Error'));
 
-        expect(onNext).not.toHaveBeenCalled();
-        expect(onError).toHaveBeenCalledTimes(1);
-        expect(onError).toHaveBeenCalledWith(
-          new Error('GraphQL Network Error'),
-        );
-        expect(onComplete).not.toHaveBeenCalled();
+        expect(onNext).toHaveBeenCalledWith({
+          error: new Error('GraphQL Network Error'),
+        });
+        expect(onError).not.toHaveBeenCalled();
+        expect(onComplete).toHaveBeenCalledTimes(1);
 
         expect(console.warn).not.toHaveBeenCalled();
       });
@@ -678,10 +766,19 @@ describe('MockClient integration tests', () => {
     });
 
     describe('Given request handler is not defined', () => {
-      it('throws when attempting to subscribe to query', () => {
-        expect(() => mockClient.subscribe({ query: queryTwo })).toThrow(
-          'Request handler not defined for query',
-        );
+      it('calls onNext with error on observer after subscribing to observable', () => {
+        const onNext = jest.fn();
+
+        const observable = mockClient.subscribe({ query: queryTwo });
+
+        observable.subscribe({ next: onNext });
+
+        expect(onNext).toHaveBeenCalledTimes(1);
+        expect(onNext).toHaveBeenLastCalledWith({
+          error: new Error(
+            `Request handler not defined for query: ${print(queryTwo)}`,
+          ),
+        });
       });
     });
   });

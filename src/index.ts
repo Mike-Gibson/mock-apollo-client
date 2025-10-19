@@ -1,2 +1,5 @@
 export * from './mockClient';
-export { createMockSubscription, IMockSubscription } from './mockSubscription';
+export {
+  createMockSubscription,
+  type IMockSubscription,
+} from './mockSubscription';
