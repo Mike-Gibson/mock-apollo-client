@@ -30,12 +30,12 @@
   "homepage": "https://github.com/mike-gibson/mock-apollo-client#readme",
   "devDependencies": {
     "@apollo/client": "3.13",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.18.11",
     "graphql": "^15.8.0",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.2",
-    "typescript": "^5.4.5"
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "@apollo/client": "^3.0.0"

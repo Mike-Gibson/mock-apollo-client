@@ -51,14 +51,14 @@ describe('MockClient integration tests', () => {
       });
 
       it('throws when a handler is added for the same query', () => {
-        expect(() => mockClient.setRequestHandler(queryOne, jest.fn())).toThrowError('Request handler already defined ');
+        expect(() => mockClient.setRequestHandler(queryOne, jest.fn())).toThrow('Request handler already defined ');
       });
     });
 
     describe('Given request handler is not defined', () => {
       it('throws when executing the query', () => {
         expect(() => mockClient.query({ query: queryTwo }))
-          .toThrowError('Request handler not defined for query');
+          .toThrow('Request handler not defined for query');
       });
 
       it('returns a promise which rejects and but warns in console when a handler not being defined and missingHandlerPolicy is "warn-and-return-error"', async () => {
@@ -68,9 +68,9 @@ describe('MockClient integration tests', () => {
 
         let promise =  mockClient.query({ query: queryTwo });
 
-        await expect(promise).rejects.toThrowError('Request handler not defined for query');
-        expect(console.warn).toBeCalledTimes(1);
-        expect(console.warn).toBeCalledWith(`Request handler not defined for query: ${print(queryTwo)}`);
+        await expect(promise).rejects.toThrow('Request handler not defined for query');
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith(`Request handler not defined for query: ${print(queryTwo)}`);
       });
     });
 
@@ -80,7 +80,7 @@ describe('MockClient integration tests', () => {
         mockClient.removeRequestHandler(queryTwo);
 
         expect(() => mockClient.query({ query: queryTwo }))
-          .toThrowError('Request handler not defined for query');
+          .toThrow('Request handler not defined for query');
       });
 
       it('returns a promise which rejects and but warns in console when a handler not being defined and missingHandlerPolicy is "warn-and-return-error"', async () => {
@@ -93,9 +93,9 @@ describe('MockClient integration tests', () => {
 
         let promise =  mockClient.query({ query: queryTwo });
 
-        await expect(promise).rejects.toThrowError('Request handler not defined for query');
-        expect(console.warn).toBeCalledTimes(1);
-        expect(console.warn).toBeCalledWith(`Request handler not defined for query: ${print(queryTwo)}`);
+        await expect(promise).rejects.toThrow('Request handler not defined for query');
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith(`Request handler not defined for query: ${print(queryTwo)}`);
       });
     });
   });
@@ -129,8 +129,8 @@ describe('MockClient integration tests', () => {
       it('warns when request handler is added and does not handle request', async () => {
         mockClient.setRequestHandler(query, requestHandler);
 
-        expect(console.warn).toBeCalledTimes(1);
-        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
 
         const result = await mockClient.query({ query });
 
@@ -159,8 +159,8 @@ describe('MockClient integration tests', () => {
       it('warns when request handler is added and does not handle request', async () => {
         mockClient.setRequestHandler(query, requestHandler);
 
-        expect(console.warn).toBeCalledTimes(1);
-        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
 
         const result = await mockClient.query({ query });
 
@@ -197,13 +197,13 @@ describe('MockClient integration tests', () => {
       it('does not warn when request handler is added and handles request with merging', async () => {
         mockClient.setRequestHandler(query, requestHandler);
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
 
         const result = await mockClient.query({ query });
 
         expect(result.data).toEqual({ user: { id: 1, name: 'bob', isLoggedIn: true } });
-        expect(requestHandler).toBeCalledTimes(1);
-        expect(console.warn).not.toBeCalled();
+        expect(requestHandler).toHaveBeenCalledTimes(1);
+        expect(console.warn).not.toHaveBeenCalled();
       });
     });
 
@@ -231,12 +231,12 @@ describe('MockClient integration tests', () => {
       it('does not warn when request handler is added and handles request', async () => {
         mockClient.setRequestHandler(query, requestHandler);
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
 
         const result = await mockClient.query({ query });
 
         expect(result.data).toEqual({ user: { id: 1, name: 'bob', isLoggedIn: false } });
-        expect(requestHandler).toBeCalledTimes(1);
+        expect(requestHandler).toHaveBeenCalledTimes(1);
       });
     });
   });
@@ -262,7 +262,7 @@ describe('MockClient integration tests', () => {
 
         expect(result.data).toEqual({ items: [{ id: 1 }] });
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
       });
     });
   });
@@ -292,16 +292,16 @@ describe('MockClient integration tests', () => {
       it('does not warn or error when request handler is added and request is handled', async () => {
         mockClient.setRequestHandler(query, requestHandler);
 
-        expect(console.warn).not.toBeCalled();
-        expect(console.error).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
 
         const result = await mockClient.query({ query });
 
         expect(result.data).toEqual({ user: { id: 1, name: 'Bob' } });
-        expect(requestHandler).toBeCalledTimes(1);
+        expect(requestHandler).toHaveBeenCalledTimes(1);
 
-        expect(console.warn).not.toBeCalled();
-        expect(console.error).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
       });
     });
 
@@ -337,16 +337,16 @@ describe('MockClient integration tests', () => {
       it('does not warn or error when request handler is added and request is handled', async () => {
         mockClient.setRequestHandler(query, requestHandler);
 
-        expect(console.warn).not.toBeCalled();
-        expect(console.error).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
 
         const result = await mockClient.query({ query });
 
         expect(result.data).toEqual({ hardware: { __typename: 'Memory', id: 2, size: '16gb' } });
-        expect(requestHandler).toBeCalledTimes(1);
+        expect(requestHandler).toHaveBeenCalledTimes(1);
 
-        expect(console.warn).not.toBeCalled();
-        expect(console.error).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
       });
     });
 
@@ -374,17 +374,17 @@ describe('MockClient integration tests', () => {
       it('does not warn or error when request handler is added and request is handled', async () => {
         mockClient.setRequestHandler(mutation, requestHandler);
 
-        expect(console.warn).not.toBeCalled();
-        expect(console.error).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
 
         const result = await mockClient.mutate({ mutation, variables: { name: 'Barry' } });
 
         expect(result.data).toEqual({ addUser: { __typename: 'User', id: 7, name: 'Barry' } });
-        expect(requestHandler).toBeCalledTimes(1);
-        expect(requestHandler).toBeCalledWith({ name: 'Barry' });
+        expect(requestHandler).toHaveBeenCalledTimes(1);
+        expect(requestHandler).toHaveBeenCalledWith({ name: 'Barry' });
 
-        expect(console.warn).not.toBeCalled();
-        expect(console.error).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
       });
     });
 
@@ -430,17 +430,17 @@ describe('MockClient integration tests', () => {
       it('does not warn or error when request handler is added and request is handled', async () => {
         mockClient.setRequestHandler(mutation, requestHandler);
 
-        expect(console.warn).not.toBeCalled();
-        expect(console.error).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
 
         const result = await mockClient.mutate({ mutation, variables: { id: 2, quantity: 7 } });
-        expect(requestHandler).toBeCalledWith({ id: 2, quantity: 7 });
+        expect(requestHandler).toHaveBeenCalledWith({ id: 2, quantity: 7 });
 
         expect(result.data).toEqual({ updateHardware: { __typename: 'Memory', id: 2, quantity: 7, size: '16gb' } });
-        expect(requestHandler).toBeCalledTimes(1);
+        expect(requestHandler).toHaveBeenCalledTimes(1);
 
-        expect(console.warn).not.toBeCalled();
-        expect(console.error).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
+        expect(console.error).not.toHaveBeenCalled();
       });
     });
   });
@@ -574,14 +574,14 @@ describe('MockClient integration tests', () => {
       });
 
       it('throws when a handler is added for the same query', () => {
-        expect(() => mockClient.setRequestHandler(queryOne, jest.fn())).toThrowError('Request handler already defined ');
+        expect(() => mockClient.setRequestHandler(queryOne, jest.fn())).toThrow('Request handler already defined ');
       });
     });
 
     describe('Given request handler is not defined', () => {
       it('throws when attempting to subscribe to query', () => {
         expect(() => mockClient.subscribe({ query: queryTwo }))
-          .toThrowError('Request handler not defined for query');
+          .toThrow('Request handler not defined for query');
       });
     });
   });

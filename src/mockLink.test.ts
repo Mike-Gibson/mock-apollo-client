@@ -32,7 +32,7 @@ describe('class MockLink', () => {
       expect(() => mockLink.setRequestHandler(queryOne, () => <any>{}))
         .toThrow('Request handler already defined for query');
 
-      expect(console.warn).not.toBeCalled();
+      expect(console.warn).not.toHaveBeenCalled();
     });
 
     it('does not throw when two handlers are added for two different queries', () => {
@@ -52,8 +52,8 @@ describe('class MockLink', () => {
           mockLink.setRequestHandler(clientSideQuery, jest.fn());
         }).not.toThrow();
 
-        expect(console.warn).toBeCalledTimes(1);
-        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
       });
 
       it('throws when the same mixed query is added twice', () => {
@@ -61,9 +61,9 @@ describe('class MockLink', () => {
 
         expect(() => {
           mockLink.setRequestHandler(mixedQueryOne, jest.fn());
-        }).toThrowError('Request handler already defined for query');
+        }).toThrow('Request handler already defined for query');
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
       });
 
       it('does not throw when two different mixed queries are added', () => {
@@ -73,7 +73,7 @@ describe('class MockLink', () => {
           mockLink.setRequestHandler(mixedQueryTwo, jest.fn());
         }).not.toThrow();
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
       });
     });
 
@@ -93,7 +93,7 @@ describe('class MockLink', () => {
       expect(() => mockLink.removeRequestHandler(queryOne))
         .toThrow('Request handler not defined for query');
 
-      expect(console.warn).not.toBeCalled();
+      expect(console.warn).not.toHaveBeenCalled();
     });
 
     it('does not throw when a handler exists for the query', () => {
@@ -113,16 +113,16 @@ describe('class MockLink', () => {
           mockLink.setRequestHandler(clientSideQuery, jest.fn());
         }).not.toThrow();
 
-        expect(console.warn).toBeCalledTimes(1);
-        expect(console.warn).toBeCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
       });
 
       it('throws when a handler for the mixed query is not defined', () => {
         expect(() => {
           mockLink.removeRequestHandler(mixedQuery);
-        }).toThrowError('Request handler not defined for query');
+        }).toThrow('Request handler not defined for query');
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
       });
 
       it('does not throw when a handler exists for the mixed query', () => {
@@ -132,7 +132,7 @@ describe('class MockLink', () => {
           mockLink.removeRequestHandler(mixedQuery);
         }).not.toThrow();
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
       });
     });
 
@@ -146,7 +146,7 @@ describe('class MockLink', () => {
           mockLink.removeRequestHandler(query);
         }).not.toThrow();
 
-        expect(console.warn).not.toBeCalled();
+        expect(console.warn).not.toHaveBeenCalled();
       });
     });
   });
@@ -163,13 +163,13 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(handler).toBeCalledTimes(1);
-      expect(handler).toBeCalledWith({ a: 'one' });
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith({ a: 'one' });
 
-      expect(observer.next).toBeCalledTimes(1);
-      expect(observer.next).toBeCalledWith({ data: 'Query one result' });
-      expect(observer.error).not.toBeCalled();
-      expect(observer.complete).toBeCalledTimes(1);
+      expect(observer.next).toHaveBeenCalledTimes(1);
+      expect(observer.next).toHaveBeenCalledWith({ data: 'Query one result' });
+      expect(observer.error).not.toHaveBeenCalled();
+      expect(observer.complete).toHaveBeenCalledTimes(1);
     });
 
     it('correctly executes the handler when the handler is defined as a promise and it rejects', async () => {
@@ -183,13 +183,13 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(handler).toBeCalledTimes(1);
-      expect(handler).toBeCalledWith({ a: 'one' });
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith({ a: 'one' });
 
-      expect(observer.next).not.toBeCalled();
-      expect(observer.error).toBeCalledTimes(1);
-      expect(observer.error).toBeCalledWith('Test error');
-      expect(observer.complete).not.toBeCalled();
+      expect(observer.next).not.toHaveBeenCalled();
+      expect(observer.error).toHaveBeenCalledTimes(1);
+      expect(observer.error).toHaveBeenCalledWith('Test error');
+      expect(observer.complete).not.toHaveBeenCalled();
     });
 
     it('returns an error when the handler is defined but returns undefined', async () => {
@@ -203,10 +203,10 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(observer.next).not.toBeCalled();
-      expect(observer.error).toBeCalledTimes(1);
-      expect(observer.error).toBeCalledWith(new Error("Request handler must return a promise or subscription. Received 'undefined'."));
-      expect(observer.complete).not.toBeCalled();
+      expect(observer.next).not.toHaveBeenCalled();
+      expect(observer.error).toHaveBeenCalledTimes(1);
+      expect(observer.error).toHaveBeenCalledWith(new Error("Request handler must return a promise or subscription. Received 'undefined'."));
+      expect(observer.complete).not.toHaveBeenCalled();
     });
 
     it('returns an error when the handler is defined but throws', async () => {
@@ -220,10 +220,10 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(observer.next).not.toBeCalled();
-      expect(observer.error).toBeCalledTimes(1);
-      expect(observer.error).toBeCalledWith(new Error('Unexpected error whilst calling request handler: Error in handler'));
-      expect(observer.complete).not.toBeCalled();
+      expect(observer.next).not.toHaveBeenCalled();
+      expect(observer.error).toHaveBeenCalledTimes(1);
+      expect(observer.error).toHaveBeenCalledWith(new Error('Unexpected error whilst calling request handler: Error in handler'));
+      expect(observer.complete).not.toHaveBeenCalled();
     });
 
     it('correctly executes the handler when handler is defined as a subscription and it produces data', async () => {
@@ -241,13 +241,13 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(handler).toBeCalledTimes(1);
-      expect(handler).toBeCalledWith({ a: 'one' });
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith({ a: 'one' });
 
-      expect(observer.next).toBeCalledTimes(2);
-      expect(observer.next).toBeCalledWith({ data: 'Query one result' });
-      expect(observer.error).not.toBeCalled();
-      expect(observer.complete).not.toBeCalledTimes(1);
+      expect(observer.next).toHaveBeenCalledTimes(2);
+      expect(observer.next).toHaveBeenCalledWith({ data: 'Query one result' });
+      expect(observer.error).not.toHaveBeenCalled();
+      expect(observer.complete).not.toHaveBeenCalledTimes(1);
       expect(subscription.closed).toBe(false);
     })
 
@@ -265,13 +265,13 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(handler).toBeCalledTimes(1);
-      expect(handler).toBeCalledWith({ a: 'one' });
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith({ a: 'one' });
 
-      expect(observer.next).not.toBeCalled();
-      expect(observer.error).toBeCalledTimes(1);
-      expect(observer.error).toBeCalledWith('Test error');
-      expect(observer.complete).not.toBeCalled();
+      expect(observer.next).not.toHaveBeenCalled();
+      expect(observer.error).toHaveBeenCalledTimes(1);
+      expect(observer.error).toHaveBeenCalledWith('Test error');
+      expect(observer.complete).not.toHaveBeenCalled();
       expect(subscription.closed).toBe(true);
     });
 
@@ -291,13 +291,13 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(handler).toBeCalledTimes(1);
-      expect(handler).toBeCalledWith(undefined);
+      expect(handler).toHaveBeenCalledTimes(1);
+      expect(handler).toHaveBeenCalledWith(undefined);
 
-      expect(observer.next).toBeCalledTimes(1);
-      expect(observer.next).toBeCalledWith({ data: { __typename: 'Person', name: 'Bob' } });
-      expect(observer.error).not.toBeCalled();
-      expect(observer.complete).toBeCalledTimes(1);
+      expect(observer.next).toHaveBeenCalledTimes(1);
+      expect(observer.next).toHaveBeenCalledWith({ data: { __typename: 'Person', name: 'Bob' } });
+      expect(observer.error).not.toHaveBeenCalled();
+      expect(observer.complete).toHaveBeenCalledTimes(1);
     });
 
     it('throws when a previously defined handler has been removed', async () => {
@@ -313,7 +313,7 @@ describe('class MockLink', () => {
       mockLink = new MockLink({missingHandlerPolicy: 'throw-error'})
 
       expect(() => mockLink.request(queryOneOperation))
-        .toThrowError(`Request handler not defined for query: ${print(queryOne)}`)
+        .toThrow(`Request handler not defined for query: ${print(queryOne)}`)
     });
 
     it('when "warn-and-return-error" logs a warning when a handler is not defined for the query', async () => {
@@ -326,11 +326,11 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(observer.next).not.toBeCalled();
-      expect(observer.error).toBeCalled();
-      expect(observer.complete).not.toBeCalled();
-      expect(console.warn).toBeCalledTimes(1);
-      expect(console.warn).toBeCalledWith(`Request handler not defined for query: ${print(queryOne)}`);
+      expect(observer.next).not.toHaveBeenCalled();
+      expect(observer.error).toHaveBeenCalled();
+      expect(observer.complete).not.toHaveBeenCalled();
+      expect(console.warn).toHaveBeenCalledTimes(1);
+      expect(console.warn).toHaveBeenCalledWith(`Request handler not defined for query: ${print(queryOne)}`);
     });
 
     it('when "return-error" returns an error when a handler is not defined for the query', async () => {
@@ -343,10 +343,10 @@ describe('class MockLink', () => {
 
       await new Promise(r => setTimeout(r, 0));
 
-      expect(observer.next).not.toBeCalled();
-      expect(observer.error).toBeCalledTimes(1);
-      expect(observer.error).toBeCalledWith(new Error(`Request handler not defined for query: ${print(queryOne)}`));
-      expect(observer.complete).not.toBeCalled();
+      expect(observer.next).not.toHaveBeenCalled();
+      expect(observer.error).toHaveBeenCalledTimes(1);
+      expect(observer.error).toHaveBeenCalledWith(new Error(`Request handler not defined for query: ${print(queryOne)}`));
+      expect(observer.complete).not.toHaveBeenCalled();
     });
   })
 });

@@ -34,74 +34,74 @@ describe('class MockLink', () => {
     it('warns if overriding observer', () => {
       mockSubscription.subscribe(mockObserver);
       mockSubscription.subscribe(mockObserver);
-      expect(console.warn).toBeCalled();
+      expect(console.warn).toHaveBeenCalled();
     });
 
     it('does not warn if logging is disabled', () => {
       mockSubscription = new MockSubscription({ disableLogging: true });
       mockSubscription.subscribe(mockObserver);
       mockSubscription.subscribe(mockObserver);
-      expect(console.warn).not.toBeCalled();
+      expect(console.warn).not.toHaveBeenCalled();
     });
   });
 
   describe('method next', () => {
     it('warns if the observer is not set', () => {
       mockSubscription.next({ data: {} });
-      expect(console.warn).toBeCalled();
+      expect(console.warn).toHaveBeenCalled();
     });
 
     it('warns if the observer is closed', () => {
       mockSubscription.subscribe(mockObserver);
       mockObserver.closed = true;
       mockSubscription.next({ data: {} });
-      expect(console.warn).toBeCalled();
+      expect(console.warn).toHaveBeenCalled();
     });
 
     it('does not warn if logging is disabled', () => {
       mockSubscription = new MockSubscription({ disableLogging: true });
       mockSubscription.next({ data: {} });
-      expect(console.warn).not.toBeCalled();
+      expect(console.warn).not.toHaveBeenCalled();
     });
   });
 
   describe('method error', () => {
     it('warns if the observer is not set', () => {
       mockSubscription.error(new Error());
-      expect(console.warn).toBeCalled();
+      expect(console.warn).toHaveBeenCalled();
     });
 
     it('warns if the observer is closed', () => {
       mockSubscription.subscribe(mockObserver);
       mockObserver.closed = true;
       mockSubscription.error(new Error());
-      expect(console.warn).toBeCalled();
+      expect(console.warn).toHaveBeenCalled();
     });
 
     it('does not warn if logging is disabled', () => {
       mockSubscription = new MockSubscription({ disableLogging: true });
       mockSubscription.error(new Error());
-      expect(console.warn).not.toBeCalled();
+      expect(console.warn).not.toHaveBeenCalled();
     });
   });
 
   describe('method complete', () => {
     it('warns if the observer is not set', () => {
       mockSubscription.complete();
-      expect(console.warn).toBeCalled();
+      expect(console.warn).toHaveBeenCalled();
     });
 
     it('warns if the observer is closed', () => {
       mockSubscription.subscribe(mockObserver);
       mockObserver.closed = true;
       mockSubscription.complete();
-      expect(console.warn).toBeCalled();
+      expect(console.warn).toHaveBeenCalled();
     });
 
     it('does not warn if logging is disabled', () => {
       mockSubscription = new MockSubscription({ disableLogging: true });
       mockSubscription.complete();
-      expect(console.warn).not.toBeCalled();
+      expect(console.warn).not.toHaveBeenCalled();
     });
   });
 });

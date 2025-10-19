@@ -121,8 +121,8 @@ mockApolloClient.setRequestHandler(GET_DOG_QUERY, queryHandler);
 // ....
 
 it('executes the query with the correct variables', () => {
-  expect(queryHandler).toBeCalledTimes(1);
-  expect(queryHandler).toBeCalledWith({ name: 'Rufus' });
+  expect(queryHandler).toHaveBeenCalledTimes(1);
+  expect(queryHandler).toHaveBeenCalledWith({ name: 'Rufus' });
 });
 ```
 
