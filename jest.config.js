@@ -4,5 +4,6 @@ const additionalConfig = displayName ? { displayName } : {};
 
 module.exports = {
   preset: 'ts-jest',
+  testPathIgnorePatterns: ['./example'],
   ...additionalConfig,
 };
