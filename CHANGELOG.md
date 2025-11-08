@@ -1,3 +1,14 @@
+# [2.0.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v2.0.0) (2025-11-08)
+
+### Features
+
+- **[Breaking Change]** Support Apollo Client v4 (drops support for v3) [#69](https://github.com/Mike-Gibson/mock-apollo-client/pull/69)
+
+  If targeting Apollo Client 3, continue using the latest 1.x version.
+
+  Additional breaking changes:
+  - Mock Apollo Client no longer supports the option `missingHandlerPolicy`. This has been replaced with `suppressMissingHandlerWarning` as error handling behaviour has been made consistent in Apollo Client.
+
 # [1.4.0](https://github.com/Mike-Gibson/mock-apollo-client/releases/tag/v1.4.0) (2025-10-18)
 
 ### Features
