@@ -4,14 +4,17 @@ Helps unit test components which use the Apollo Client.
 
 ## Versions
 
-Version 0.x of this library is compatible with Apollo client 2.
-View the README for 0.x [here](https://github.com/Mike-Gibson/mock-apollo-client/tree/release/0.x).
-
-Version 1.x of this library is compatible with Apollo client 3 (this README)
+| Version | Compatibility                                                                                               |
+| ------- | ----------------------------------------------------------------------------------------------------------- |
+| 0.x     | Apollo client 2. README for 0.x [here](https://github.com/Mike-Gibson/mock-apollo-client/tree/release/0.x). |
+| 1.x     | Apollo client 3. README for 1.x [here](https://github.com/Mike-Gibson/mock-apollo-client/tree/release/1.x). |
+| 2.x     | Apollo client 4. (this README)                                                                              |
 
 ## Motivation
 
-Whilst using the impressive `@apollo/client` library, I ran into issues while trying to unit test components which used the GraphQL `Query` and `Mutation` components. The Apollo client library includes a `MockedProvider` component which allows query and mutation results to be mocked, but didn't offer enough control within unit tests. The Apollo client documentation for testing can be found [here](https://www.apollographql.com/docs/react/development-testing/testing/).
+When using the `@apollo/client` library, I ran into issues trying to unit test React components which called GraphQL queries and mutations.
+
+The Apollo client library includes a `MockedProvider` component which allows query and mutation results to be mocked, but didn't offer enough control within unit tests. The Apollo client documentation for testing can be found [here](https://www.apollographql.com/docs/react/development-testing/testing/).
 
 Specifically, some of the issues I faced were:
 
@@ -30,19 +33,19 @@ npm install --save-dev mock-apollo-client
 
 ## Usage
 
-The examples below use `React`, `enzyme` and `Jest`, but `mock-apollo-client` is standalone and can used with any libraries and test frameworks.
+The examples below use `React`, `Jest` and `React Testing Library`, but `mock-apollo-client` is standalone and can used with any libraries and test frameworks.
 
-The examples have been adapted from the official Apollo testing docs and are written in TypeScript.
+The examples have been adapted from the official Apollo testing docs where possible.
 
 ### Simple Query Example
 
 Consider the file below, which contains a single GraphQL query and a component which is responsible for rendering the result of the query:
 
-```tsx
-// dog.tsx
+```jsx
+// dog.jsx
 
-import { gql, useQuery } from '@apollo/client';
-import React from 'react';
+import { gql } from '@apollo/client';
+import { useQuery } from '@apollo/client/react';
 
 export const GET_DOG_QUERY = gql`
   query getDog($name: String) {
@@ -54,12 +57,12 @@ export const GET_DOG_QUERY = gql`
   }
 `;
 
-export const Dog: React.FunctionComponent<{ name: string }> = ({ name }) => {
+export const Dog = ({ name }) => {
   const { loading, error, data } = useQuery(GET_DOG_QUERY, {
     variables: { name },
   });
   if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error!</p>;
+  if (error) return <p>{error.message}</p>;
 
   return (
     <p>
@@ -71,19 +74,16 @@ export const Dog: React.FunctionComponent<{ name: string }> = ({ name }) => {
 
 To unit test this component using `mock-apollo-client`, the test file could look like the following:
 
-```tsx
-// dog.test.tsx
-
-import { ApolloProvider } from '@apollo/client';
-import { mount, ReactWrapper } from 'enzyme';
+```jsx
+// dog.test.jsx
+import '@testing-library/jest-dom';
+import { ApolloProvider } from '@apollo/client/react';
+import { render, screen } from '@testing-library/react';
 import { createMockClient } from 'mock-apollo-client';
-import * as React from 'react';
 
 import { GET_DOG_QUERY, Dog } from './dog';
 
-let wrapper: ReactWrapper;
-
-beforeEach(() => {
+it('renders the dog name and breed', async () => {
   const mockClient = createMockClient();
 
   mockClient.setRequestHandler(GET_DOG_QUERY, () =>
@@ -92,29 +92,27 @@ beforeEach(() => {
     }),
   );
 
-  wrapper = mount(
+  render(
     <ApolloProvider client={mockClient}>
       <Dog name="Rufus" />
     </ApolloProvider>,
   );
-});
 
-it('renders the dog name and breed', () => {
-  expect(wrapper.text()).toContain('Rufus is a Poodle');
+  expect(await screen.findByText('Rufus is a Poodle')).toBeInTheDocument();
 });
 ```
 
 This test file does the following:
 
 1. Instantiates a new mock Apollo client
-1. Calls `setRequestHandler` on the mock Apollo client to set a function to be called when the Apollo client executes the Dog query
-1. Uses the mock and initialises the enzyme wrapper for the unit tests
+1. Calls `setRequestHandler` on the mock Apollo client instance to set a function to be called when Apollo client executes the Dog query
+1. Passes the mock Apollo client instance to the ApolloProvider when rendering the component
 
 ### Asserting query variables
 
 The method `setRequestHandler` is passed a function to call when Apollo client executes a given query and it is called with the variables for that query, so it is easy to assert the component is behaving as expected using a spy library.
 
-```typescript
+```javascript
 const queryHandler = jest.fn().mockResolvedValue({
   data: { dog: { id: 1, name: 'Rufus', breed: 'Poodle' } },
 });
@@ -135,17 +133,17 @@ A request handler returns a promise, so testing for loading state just requires 
 
 ### Error states
 
-To simulate a GraphQL network error, the request handler should return a rejected promise. i.e.
+To simulate a network error, the request handler should return a rejected promise. i.e.
 
-```typescript
+```javascript
 mockApolloClient.setRequestHandler(GET_DOG_QUERY, () =>
-  Promise.reject(new Error('GraphQL Network Error')),
+  Promise.reject(new Error('Network Error')),
 );
 ```
 
 To simulate GraphQL errors, the request handler should return a Promise which resolves with an `errors` field. i.e.
 
-```typescript
+```javascript
 mockApolloClient.setRequestHandler(GET_DOG_QUERY, () =>
   Promise.resolve({ errors: [{ message: 'GraphQL Error' }] }),
 );
@@ -160,13 +158,13 @@ Mutations can be tested the same way that queries are, by using `setRequestHandl
 Subscriptions can be tested, but require a different setup as they receive a stream of data.
 Consider the file below, which contains a single subscription and a component which is responsible for rendering the updated data:
 
-```tsx
-// dogSubscription.tsx
+```jsx
+// dogSubscription.jsx
 
-import { gql, useSubscription } from '@apollo/client';
-import React from 'react';
+import { gql } from '@apollo/client';
+import { useSubscription } from '@apollo/client/react';
 
-export const SUBSCRIBE_DOG_DOCUMENT = gql`
+export const DOG_SUBSCRIPTION = gql`
   subscription subscribeDog($name: String) {
     dog(name: $name) {
       id
@@ -176,10 +174,8 @@ export const SUBSCRIBE_DOG_DOCUMENT = gql`
   }
 `;
 
-export const DogSubscription: React.FunctionComponent<{ name: string }> = ({
-  name,
-}) => {
-  const { loading, error, data } = useSubscription(SUBSCRIBE_DOG_DOCUMENT, {
+export const DogSubscription = ({ name }) => {
+  const { loading, error, data } = useSubscription(DOG_SUBSCRIPTION, {
     variables: { name },
   });
   if (loading) return <p>Loading...</p>;
@@ -195,45 +191,38 @@ export const DogSubscription: React.FunctionComponent<{ name: string }> = ({
 
 To unit test this component using `mock-apollo-client`, the test file could look like the following:
 
-```tsx
-// dogSubscription.test.tsx
+```jsx
+// dogSubscription.test.jsx
 
-import { ApolloProvider } from '@apollo/client';
-import { mount, ReactWrapper } from 'enzyme';
-import {
-  createMockClient,
-  createMockSubscription,
-  IMockSubscription,
-} from 'mock-apollo-client';
-import { act } from 'react-dom/test-utils';
-import * as React from 'react';
+import '@testing-library/jest-dom';
+import { act } from 'react';
+import { ApolloProvider } from '@apollo/client/react';
+import { render, screen } from '@testing-library/react';
+import { createMockClient, createMockSubscription } from 'mock-apollo-client';
 
-import { SUBSCRIBE_DOG_DOCUMENT, DogSubscription } from './dogSubscription';
+import { DOG_SUBSCRIPTION, DogSubscription } from './dogSubscription';
 
-let wrapper: ReactWrapper;
-let mockSubscription: IMockSubscription;
-
-beforeEach(() => {
+it('renders the dog details', async () => {
   const mockClient = createMockClient();
-  mockSubscription = createMockSubscription();
+  const mockSubscription = createMockSubscription();
 
-  mockClient.setRequestHandler(SUBSCRIBE_DOG_DOCUMENT, () => mockSubscription);
+  mockClient.setRequestHandler(DOG_SUBSCRIPTION, () => mockSubscription);
 
-  wrapper = mount(
+  render(
     <ApolloProvider client={mockClient}>
       <DogSubscription name="Rufus" />
     </ApolloProvider>,
   );
-});
 
-it('renders the dog details', () => {
   act(() => {
     mockSubscription.next({
       data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 0 } },
     });
   });
 
-  expect(wrapper.text()).toContain('Rufus has barked 0 time(s)');
+  expect(
+    await screen.findByText('Rufus has barked 0 time(s)'),
+  ).toBeInTheDocument();
 
   act(() => {
     mockSubscription.next({
@@ -241,7 +230,9 @@ it('renders the dog details', () => {
     });
   });
 
-  expect(wrapper.text()).toContain('Rufus has barked 1 time(s)');
+  expect(
+    await screen.findByText('Rufus has barked 1 time(s)'),
+  ).toBeInTheDocument();
 });
 ```
 
@@ -251,16 +242,16 @@ The subscription can be closed by calling `.complete` if necessary for the test.
 
 You can also test error states by calling `.error` on the `mockSubscription` and passing errors as described in [Error States](#error-states):
 
-```typescript
-mockSubscription.error(new Error('GraphQL Network Error'));
+```javascript
+mockSubscription.error(new Error('Network Error'));
 ```
 
 #### Multiple subscriptions
 
 A mock subscription will only be associated with a single invocation of a query. If a component is subscribing to the same query multiple times, then a separate mock subscription should be used for each one.
 
-```typescript
-const subscriptions: IMockSubscription[] = [];
+```javascript
+const subscriptions = [];
 
 mockClient.setRequestHandler(
   SUBSCRIBE_DOG_DOCUMENT,
@@ -275,13 +266,15 @@ mockClient.setRequestHandler(
 subscriptions.forEach((s) => s.next({ data: { dog: { id: 1, name: 'Rufus', numberOfBarks: 1 } } }));
 ```
 
-### Specifying Apollo client options
+### Specifying mock Apollo client options
+
+#### Apollo client options
 
 The `createMockClient` method can be provided with the same constructor arguments that `ApolloClient` accepts which are used when instantiating the mock Apollo client.
 
 For example, to specify the cache (and possible types for fragment matching) that should be used:
 
-```typescript
+```javascript
 const cache = new InMemoryCache({
   possibleTypes: myPossibleTypes,
 });
@@ -289,33 +282,23 @@ const cache = new InMemoryCache({
 const mockClient = createMockClient({ cache });
 ```
 
-Additionally, you can specify a `missingHandlerPolicy` to define the behavior of the mock client when a request handler for a particular operation is not found.
+Note: it is not possible to specify the `link` to use as this is how `mock-apollo-client` injects its request handling behaviour.
 
-The `missingHandlerPolicy` accepts one of three string values:
+#### Mock client options
 
-- `'throw-error'`: The client throws an error when it encounters a missing handler.
-- `'warn-and-return-error'`: The client logs a warning message in the console and returns an error.
-- `'return-error'`: The client returns an error without any warning message.
+Additionally, you can specify the following options which control the behaviour of the mock Apollo client:
 
-Here's an example of how you can set the `missingHandlerPolicy`:
-
-```typescript
-const mockClient = createMockClient({
-  missingHandlerPolicy: 'warn-and-return-error',
-});
-```
-
-In this example, if a request handler for a given operation is not found, the client will log a warning message to the console and then return an error.
-
-Note: it is not possible to specify the `link` to use as this is how `mock-apollo-client` injects its behaviour.
+| Option                         | Description                                                                                         | Default                          |
+| ------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `supressMissingHandlerWarning` | Controls whether a warning is logged when a request handler for an executed operation is not found. | `false` (Warning will be logged) |
 
 ### Fragments
 
-If your queries or mutations use fragments against union or interface types, you must inject a cache object when creating the mock client which has been provided with `possibleTypes`, and also include the correct `__typename` field when mocking the response.
+If queries or mutations use fragments against union or interface types, you must inject a cache object when creating the mock client which has been provided with `possibleTypes`, and also include the correct `__typename` field when mocking the response.
 
 For example:
 
-```typescript
+```javascript
 import { InMemoryCache } from '@apollo/client';
 import { createMockClient } from 'mock-apollo-client';
 
@@ -362,6 +345,6 @@ It's possible to remove a previously registered handler for a query using `remov
 
 For example:
 
-```typescript
+```javascript
 mockApolloClient.removeRequestHandler(GET_DOG_QUERY);
 ```
