@@ -73,15 +73,22 @@ describe('MockClient integration tests', () => {
     });
 
     describe('Given request handler is not defined', () => {
-      it('throws when executing the query', async () => {
-        await expect(() =>
-          mockClient.query({ query: queryTwo }),
-        ).rejects.toThrow('Request handler not defined for query');
+      it('returns a promise which rejects and logs warning in console', async () => {
+        let promise = mockClient.query({ query: queryTwo });
+
+        await expect(promise).rejects.toThrow(
+          'Request handler not defined for query',
+        );
+
+        expect(console.warn).toHaveBeenCalledTimes(1);
+        expect(console.warn).toHaveBeenCalledWith(
+          `Warning: mock-apollo-client - Request handler not defined for query: ${print(queryTwo)}`,
+        );
       });
 
-      it('returns a promise which rejects and but warns in console when a handler not being defined and missingHandlerPolicy is "warn-and-return-error"', async () => {
+      it('returns a promise which rejects and does not log warning in console when "supressMissingHandlerWarning" is true', async () => {
         mockClient = createMockClient({
-          missingHandlerPolicy: 'warn-and-return-error',
+          supressMissingHandlerWarning: true,
         });
 
         let promise = mockClient.query({ query: queryTwo });
@@ -89,15 +96,12 @@ describe('MockClient integration tests', () => {
         await expect(promise).rejects.toThrow(
           'Request handler not defined for query',
         );
-        expect(console.warn).toHaveBeenCalledTimes(1);
-        expect(console.warn).toHaveBeenCalledWith(
-          `Warning: mock-apollo-client - Request handler not defined for query: ${print(queryTwo)}`,
-        );
+        expect(console.warn).not.toHaveBeenCalled();
       });
     });
 
     describe('Given request handler has been removed', () => {
-      it('throws when executing the query', async () => {
+      it('returns a promise which rejects and logs warning in console', async () => {
         mockClient.setRequestHandler(queryTwo, jest.fn());
         mockClient.removeRequestHandler(queryTwo);
 
@@ -106,9 +110,9 @@ describe('MockClient integration tests', () => {
         ).rejects.toThrow('Request handler not defined for query');
       });
 
-      it('returns a promise which rejects and but warns in console when a handler not being defined and missingHandlerPolicy is "warn-and-return-error"', async () => {
+      it('returns a promise which rejects and does not log warning in console when "supressMissingHandlerWarning" is true', async () => {
         mockClient = createMockClient({
-          missingHandlerPolicy: 'warn-and-return-error',
+          supressMissingHandlerWarning: true,
         });
 
         mockClient.setRequestHandler(queryTwo, jest.fn());
@@ -119,10 +123,7 @@ describe('MockClient integration tests', () => {
         await expect(promise).rejects.toThrow(
           'Request handler not defined for query',
         );
-        expect(console.warn).toHaveBeenCalledTimes(1);
-        expect(console.warn).toHaveBeenCalledWith(
-          `Warning: mock-apollo-client - Request handler not defined for query: ${print(queryTwo)}`,
-        );
+        expect(console.warn).not.toHaveBeenCalled();
       });
     });
   });

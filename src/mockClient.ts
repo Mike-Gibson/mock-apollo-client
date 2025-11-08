@@ -3,7 +3,7 @@ import {
   DocumentNode,
   InMemoryCache as Cache,
 } from '@apollo/client';
-import { MissingHandlerPolicy, MockLink } from './mockLink';
+import { MockLink, MockLinkOptions } from './mockLink';
 import { IMockSubscription } from './mockSubscription';
 
 export type RequestHandler<TData = any, TVariables = any> = (
@@ -17,13 +17,10 @@ export type MockApolloClient = ApolloClient & {
   removeRequestHandler: (query: DocumentNode) => void;
 };
 
-interface CustomOptions {
-  missingHandlerPolicy?: MissingHandlerPolicy;
-}
-
-export type MockApolloClientOptions =
-  | (Partial<Omit<ApolloClient.Options, 'link'>> & CustomOptions)
-  | undefined;
+export type MockApolloClientOptions = Partial<
+  Omit<ApolloClient.Options, 'link'>
+> &
+  Partial<MockLinkOptions>;
 
 export const createMockClient = (
   options: MockApolloClientOptions = {},
@@ -32,13 +29,13 @@ export const createMockClient = (
     throw new Error('Providing link to use is not supported.');
   }
   const {
-    missingHandlerPolicy,
+    supressMissingHandlerWarning,
     cache: cacheFromOptions,
     ...restOptions
   } = options;
 
   const cache = cacheFromOptions ?? new Cache();
-  const link = new MockLink({ missingHandlerPolicy });
+  const link = new MockLink({ supressMissingHandlerWarning });
 
   const client = new ApolloClient({
     ...restOptions,

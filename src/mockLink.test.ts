@@ -372,51 +372,13 @@ describe('class MockLink', () => {
       expect(observer.complete).toHaveBeenCalledTimes(1);
     });
 
-    it('throws when a previously defined handler has been removed', async () => {
+    it('returns an error when a previously defined handler has been removed', async () => {
       mockLink.setRequestHandler(queryOne, jest.fn());
       mockLink.removeRequestHandler(queryOne);
 
-      expect(() => mockLink.request(queryOneOperation)).toThrow(
-        'Request handler not defined for query',
-      );
-    });
-  });
-
-  describe('constructor option "missingHandlerPolicy"', () => {
-    it('when "throw-error" throws when a handler is not defined for the query', () => {
-      mockLink = new MockLink({ missingHandlerPolicy: 'throw-error' });
-
-      expect(() => mockLink.request(queryOneOperation)).toThrow(
-        `Request handler not defined for query: ${print(queryOne)}`,
-      );
-    });
-
-    it('when "warn-and-return-error" logs a warning when a handler is not defined for the query', async () => {
-      mockLink = new MockLink({
-        missingHandlerPolicy: 'warn-and-return-error',
-      });
-
-      const observable = mockLink.request(queryOneOperation);
       const observer = createMockObserver();
 
-      observable.subscribe(observer);
-
-      await new Promise((r) => setTimeout(r, 0));
-
-      expect(observer.next).not.toHaveBeenCalled();
-      expect(observer.error).toHaveBeenCalled();
-      expect(observer.complete).not.toHaveBeenCalled();
-      expect(console.warn).toHaveBeenCalledTimes(1);
-      expect(console.warn).toHaveBeenCalledWith(
-        `Warning: mock-apollo-client - Request handler not defined for query: ${print(queryOne)}`,
-      );
-    });
-
-    it('when "return-error" returns an error when a handler is not defined for the query', async () => {
-      mockLink = new MockLink({ missingHandlerPolicy: 'return-error' });
-
       const observable = mockLink.request(queryOneOperation);
-      const observer = createMockObserver();
 
       observable.subscribe(observer);
 
@@ -428,6 +390,44 @@ describe('class MockLink', () => {
         new Error(`Request handler not defined for query: ${print(queryOne)}`),
       );
       expect(observer.complete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('constructor option "supressMissingHandlerWarning"', () => {
+    it('when "false" then logs warning to console when a handler is not defined for the query', async () => {
+      mockLink = new MockLink({ supressMissingHandlerWarning: false });
+
+      const observable = mockLink.request(queryOneOperation);
+      const observer = createMockObserver();
+
+      observable.subscribe(observer);
+
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(observer.next).not.toHaveBeenCalled();
+      expect(observer.error).toHaveBeenCalled();
+      expect(observer.complete).not.toHaveBeenCalled();
+
+      expect(console.warn).toHaveBeenCalledTimes(1);
+      expect(console.warn).toHaveBeenCalledWith(
+        `Warning: mock-apollo-client - Request handler not defined for query: ${print(queryOne)}`,
+      );
+    });
+
+    it('when "true" then does not log a warning when a handler is not defined for the query', async () => {
+      mockLink = new MockLink({ supressMissingHandlerWarning: true });
+
+      const observable = mockLink.request(queryOneOperation);
+      const observer = createMockObserver();
+
+      observable.subscribe(observer);
+
+      await new Promise((r) => setTimeout(r, 0));
+
+      expect(observer.next).not.toHaveBeenCalled();
+      expect(observer.error).toHaveBeenCalled();
+      expect(observer.complete).not.toHaveBeenCalled();
+      expect(console.warn).not.toHaveBeenCalled();
     });
   });
 });
