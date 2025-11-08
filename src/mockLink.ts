@@ -1,78 +1,93 @@
-import { ApolloLink, DocumentNode, Observable, Operation, FetchResult } from '@apollo/client/core';
-import { print, visit } from 'graphql';
+import { ApolloLink, DocumentNode, Observable } from '@apollo/client';
+import { print } from '@apollo/client/utilities';
 import { RequestHandler, RequestHandlerResponse } from './mockClient';
-import { removeClientSetsFromDocument, removeConnectionDirectiveFromDocument } from '@apollo/client/utilities';
 import { IMockSubscription, MockSubscription } from './mockSubscription';
+import {
+  removeClientSetsFromDocument,
+  removeConnectionDirectiveFromDocument,
+  stripTypenames,
+} from './directiveUtils';
 
-export type MissingHandlerPolicy = 'throw-error' | 'warn-and-return-error' | 'return-error';
-
-interface MockLinkOptions {
-  missingHandlerPolicy?: MissingHandlerPolicy;
-}
-
-const DEFAULT_MISSING_HANDLER_POLICY: MissingHandlerPolicy = 'throw-error';
+export type MockLinkOptions = {
+  /**
+   * When true, warnings will not be logged to the console when a query
+   * is executed and there is no request handler defined for it.
+   * @default false
+   */
+  supressMissingHandlerWarning: boolean;
+};
 
 export class MockLink extends ApolloLink {
-  constructor(options?: MockLinkOptions) {
+  private options: MockLinkOptions;
+  private readonly requestHandlers: Record<string, RequestHandler> = {};
+
+  constructor(options: Partial<MockLinkOptions> = {}) {
     super();
 
-    this.missingHandlerPolicy = options?.missingHandlerPolicy || DEFAULT_MISSING_HANDLER_POLICY;
+    this.options = {
+      supressMissingHandlerWarning: false,
+      ...options,
+    };
   }
 
-  private readonly missingHandlerPolicy: MissingHandlerPolicy;
-  private requestHandlers: Record<string, RequestHandler | undefined> = {};
-
   setRequestHandler(requestQuery: DocumentNode, handler: RequestHandler): void {
-    const queryWithoutClientDirectives = removeClientSetsFromDocument(requestQuery);
+    const queryWithoutDirectives = removeClientSetsFromDocument(requestQuery);
 
-    if (queryWithoutClientDirectives === null) {
-      console.warn('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler will not be registered.');
+    if (queryWithoutDirectives === null) {
+      writeWarning(
+        'The query is entirely client side (using @client directives) so the request handler will not be registered.',
+      );
       return;
     }
 
-    const key = requestToKey(queryWithoutClientDirectives);
+    const key = requestToKey(queryWithoutDirectives);
 
     if (this.requestHandlers[key]) {
-      throw new Error(`Request handler already defined for query: ${print(requestQuery)}`);
+      throw new Error(
+        `Request handler already defined for query: ${print(requestQuery)}`,
+      );
     }
 
     this.requestHandlers[key] = handler;
   }
 
   removeRequestHandler(requestQuery: DocumentNode): void {
-    const queryWithoutClientDirectives = removeClientSetsFromDocument(requestQuery);
+    const queryWithoutClientDirectives =
+      removeClientSetsFromDocument(requestQuery);
 
     if (queryWithoutClientDirectives === null) {
-      console.warn('Warning: mock-apollo-client - The query is entirely client side (using @client directives) so the request handler is not registered.');
+      writeWarning(
+        'The query is entirely client side (using @client directives) so the request handler is not registered.',
+      );
       return;
     }
 
     const key = requestToKey(queryWithoutClientDirectives);
 
     if (!this.requestHandlers[key]) {
-      throw new Error(`Request handler not defined for query: ${print(requestQuery)}`);
+      throw new Error(
+        `Request handler not defined for query: ${print(requestQuery)}`,
+      );
     }
 
     delete this.requestHandlers[key];
   }
 
-  request = (operation: Operation) => {
-    const key = requestToKey(operation.query);
+  request = (operation: ApolloLink.Operation) => {
+    return new Observable<ApolloLink.Result>((observer) => {
+      const key = requestToKey(operation.query);
 
-    const handler = this.requestHandlers[key];
+      const handler = this.requestHandlers[key];
 
-    if (!handler && this.missingHandlerPolicy === 'throw-error') {
-      throw new Error(getNotDefinedHandlerMessage(operation));
-    }
-
-    return new Observable<FetchResult>(observer => {
       if (!handler) {
-        if (this.missingHandlerPolicy === 'warn-and-return-error') {
-          console.warn(getNotDefinedHandlerMessage(operation));
-        }
-        throw new Error(getNotDefinedHandlerMessage(operation));
-      }
+        const errorMessage = `Request handler not defined for query: ${print(operation.query)}`;
 
+        if (!this.options.supressMissingHandlerWarning) {
+          writeWarning(errorMessage);
+        }
+
+        throw new Error(errorMessage);
+      }
 
       let result:
         | Promise<RequestHandlerResponse<any>>
@@ -83,7 +98,9 @@ export class MockLink extends ApolloLink {
         result = handler(operation.variables);
       } catch (error) {
         const message = error instanceof Error ? error.message : error;
-        throw new Error(`Unexpected error whilst calling request handler: ${message}`);
+        throw new Error(
+          `Unexpected error whilst calling request handler: ${message}`,
+        );
       }
 
       if (isPromise(result)) {
@@ -96,52 +113,42 @@ export class MockLink extends ApolloLink {
             observer.error(error);
           });
       } else if (isSubscription(result)) {
-        result.subscribe(observer)
+        result.subscribe(observer);
       } else {
-        throw new Error(`Request handler must return a promise or subscription. Received '${typeof result}'.`);
+        throw new Error(
+          `Request handler must return a promise or subscription. Received '${typeof result}'.`,
+        );
       }
 
-      return () => { };
+      return () => {};
     });
   };
 }
 
 const normalise = (requestQuery: DocumentNode): DocumentNode => {
-  let stripped = removeConnectionDirectiveFromDocument(requestQuery);
+  let stripped: DocumentNode | null =
+    removeConnectionDirectiveFromDocument(requestQuery);
 
-  stripped = stripped !== null
-    ? stripTypenames(stripped)
-    : null;
+  stripped = stripped !== null ? stripTypenames(stripped) : null;
 
-  return stripped === null
-    ? requestQuery
-    : stripped;
+  return stripped === null ? requestQuery : stripped;
 };
-
-const stripTypenames = (document: DocumentNode): DocumentNode | null =>
-  visit(
-    document,
-    {
-      Field: {
-        enter: (node) => node.name.value === '__typename'
-          ? null
-          : undefined,
-      },
-    });
 
 const requestToKey = (query: DocumentNode): string => {
   const normalised = normalise(query);
   const queryString = query && print(normalised);
   const requestKey = { query: queryString };
   return JSON.stringify(requestKey);
-}
+};
 
 const isPromise = (maybePromise: any): maybePromise is Promise<any> =>
   maybePromise && typeof (maybePromise as any).then === 'function';
 
-const isSubscription = (maybeSubscription: any): maybeSubscription is MockSubscription<any> =>
+const isSubscription = (
+  maybeSubscription: any,
+): maybeSubscription is MockSubscription<any> =>
   maybeSubscription && maybeSubscription instanceof MockSubscription;
 
-const getNotDefinedHandlerMessage = (operation: Operation) => {
-  return `Request handler not defined for query: ${print(operation.query)}`
-}
+const writeWarning = (message: string) => {
+  console.warn(`Warning: mock-apollo-client - ${message}`);
+};

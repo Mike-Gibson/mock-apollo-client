@@ -2,23 +2,23 @@ name: Build and test
 
 on:
   push:
-    branches: [ master, release/** ]
+    branches: [master, release/**]
   pull_request:
-    branches: [ master, release/** ]
+    branches: [master, release/**]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js
-      uses: actions/setup-node@v1
-      with:
-        node-version: 16
-    - run: npm ci
-    - run: npm run build
-    - run: npm run test:suite
-      env:
-        CI: true
+      - uses: actions/checkout@v5
+      - name: Use Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.20.0
+      - run: npm ci
+      - run: npm run prettier:check
+      - run: npm run build
+      - run: npm run test:suite
+        env:
+          CI: true

@@ -1,10 +1,9 @@
 const displayName = process.env.JEST_DISPLAY_NAME;
 
-const additionalConfig = displayName
-  ? { displayName }
-  : {};
+const additionalConfig = displayName ? { displayName } : {};
 
 module.exports = {
   preset: 'ts-jest',
+  testPathIgnorePatterns: ['./example'],
   ...additionalConfig,
 };

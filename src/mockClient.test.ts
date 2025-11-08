@@ -1,5 +1,4 @@
-import { ApolloClient } from '@apollo/client/core';
-import { InMemoryCache } from '@apollo/client/cache';
+import { ApolloClient, InMemoryCache } from '@apollo/client';
 import { MockLink } from './mockLink';
 
 import { createMockClient } from './mockClient';
@@ -8,13 +7,13 @@ describe('MockClient tests', () => {
   describe('createMockClient method', () => {
     it('creates client when called with no options', () => {
       const mockClient = createMockClient();
-  
+
       expect(mockClient).toBeInstanceOf(ApolloClient);
       expect(mockClient.cache).toBeInstanceOf(InMemoryCache);
       expect(mockClient.link).toBeInstanceOf(MockLink);
       expect(mockClient.setRequestHandler).toBeDefined();
     });
-  
+
     it('creates client when called with options', () => {
       const options = {
         cache: {} as any,
@@ -22,7 +21,7 @@ describe('MockClient tests', () => {
       };
 
       const mockClient = createMockClient(options);
-  
+
       expect(mockClient).toBeInstanceOf(ApolloClient);
       expect(mockClient.cache).toBe(options.cache);
       expect(mockClient.link).toBeInstanceOf(MockLink);
@@ -34,7 +33,9 @@ describe('MockClient tests', () => {
         link: {},
       };
 
-      expect(() => createMockClient(options)).toThrowError('Providing link to use is not supported.');
+      expect(() => createMockClient(options)).toThrow(
+        'Providing link to use is not supported.',
+      );
     });
   });
 });

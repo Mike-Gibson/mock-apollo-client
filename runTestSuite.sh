@@ -5,21 +5,7 @@
 # Currently testing the latest release of each minor version.
 
 apolloVersions=(
-  "@apollo/client@3.0.2"
-  "@apollo/client@3.1.5"
-  "@apollo/client@3.2.9"
-  "@apollo/client@3.3.21"
-  "@apollo/client@3.4.17"
-  "@apollo/client@3.5.10"
-  "@apollo/client@3.6.10"
-  "@apollo/client@3.7.17"
-  "@apollo/client@3.8.10"
-  "@apollo/client@3.9.11"
-  "@apollo/client@3.10.8"
-  "@apollo/client@3.11.10"
-  "@apollo/client@3.12.11"
-  "@apollo/client@3.12.11"
-  "@apollo/client@3.13.9"
+  "@apollo/client@4.0.7"
 )
 exitStatus=0
 

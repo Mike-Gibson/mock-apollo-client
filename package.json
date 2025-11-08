@@ -1,6 +1,6 @@
 {
   "name": "mock-apollo-client",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "Library to help unit testing when using apollo-client",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,6 +9,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:suite": "./runTestSuite.sh",
+    "prettier:check": "prettier . --check",
     "deploy": "npm run test:suite && npm run build && npm publish"
   },
   "repository": {
@@ -29,16 +30,18 @@
   },
   "homepage": "https://github.com/mike-gibson/mock-apollo-client#readme",
   "devDependencies": {
-    "@apollo/client": "3.13",
-    "@types/jest": "^29.5.12",
-    "@types/node": "^20.12.7",
-    "graphql": "^15.8.0",
-    "jest": "^29.7.0",
-    "ts-jest": "^29.1.2",
-    "typescript": "^5.4.5"
+    "@apollo/client": "^4.0.7",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.18.11",
+    "graphql": "^16.11.0",
+    "jest": "^30.2.0",
+    "prettier": "^3.6.2",
+    "rxjs": "^7.8.2",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "@apollo/client": "^3.0.0"
+    "@apollo/client": "^4.0.0"
   },
   "files": [
     "dist/**/*"

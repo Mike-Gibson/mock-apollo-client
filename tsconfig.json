@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "node16",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["es2015", "dom"],
+    "lib": ["es2024", "ESNext.Array", "ESNext.Collection", "ESNext.Iterator"],
     "declaration": true,
     "experimentalDecorators": true,
     "outDir": "dist",
@@ -14,8 +14,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
+    "noImplicitAny": true,
     "noFallthroughCasesInSwitch": true,
-    "skipLibCheck": true
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "isolatedModules": true
   },
   "include": ["./src/**/*.ts"],
   "exclude": ["./src/**/*.test.ts"]
