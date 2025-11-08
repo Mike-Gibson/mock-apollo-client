@@ -29,13 +29,13 @@ export const createMockClient = (
     throw new Error('Providing link to use is not supported.');
   }
   const {
-    supressMissingHandlerWarning,
+    suppressMissingHandlerWarning,
     cache: cacheFromOptions,
     ...restOptions
   } = options;
 
   const cache = cacheFromOptions ?? new Cache();
-  const link = new MockLink({ supressMissingHandlerWarning });
+  const link = new MockLink({ suppressMissingHandlerWarning });
 
   const client = new ApolloClient({
     ...restOptions,

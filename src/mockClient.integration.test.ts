@@ -86,9 +86,9 @@ describe('MockClient integration tests', () => {
         );
       });
 
-      it('returns a promise which rejects and does not log warning in console when "supressMissingHandlerWarning" is true', async () => {
+      it('returns a promise which rejects and does not log warning in console when "suppressMissingHandlerWarning" is true', async () => {
         mockClient = createMockClient({
-          supressMissingHandlerWarning: true,
+          suppressMissingHandlerWarning: true,
         });
 
         let promise = mockClient.query({ query: queryTwo });
@@ -110,9 +110,9 @@ describe('MockClient integration tests', () => {
         ).rejects.toThrow('Request handler not defined for query');
       });
 
-      it('returns a promise which rejects and does not log warning in console when "supressMissingHandlerWarning" is true', async () => {
+      it('returns a promise which rejects and does not log warning in console when "suppressMissingHandlerWarning" is true', async () => {
         mockClient = createMockClient({
-          supressMissingHandlerWarning: true,
+          suppressMissingHandlerWarning: true,
         });
 
         mockClient.setRequestHandler(queryTwo, jest.fn());

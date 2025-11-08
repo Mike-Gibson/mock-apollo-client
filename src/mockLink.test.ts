@@ -393,9 +393,9 @@ describe('class MockLink', () => {
     });
   });
 
-  describe('constructor option "supressMissingHandlerWarning"', () => {
+  describe('constructor option "suppressMissingHandlerWarning"', () => {
     it('when "false" then logs warning to console when a handler is not defined for the query', async () => {
-      mockLink = new MockLink({ supressMissingHandlerWarning: false });
+      mockLink = new MockLink({ suppressMissingHandlerWarning: false });
 
       const observable = mockLink.request(queryOneOperation);
       const observer = createMockObserver();
@@ -415,7 +415,7 @@ describe('class MockLink', () => {
     });
 
     it('when "true" then does not log a warning when a handler is not defined for the query', async () => {
-      mockLink = new MockLink({ supressMissingHandlerWarning: true });
+      mockLink = new MockLink({ suppressMissingHandlerWarning: true });
 
       const observable = mockLink.request(queryOneOperation);
       const observer = createMockObserver();

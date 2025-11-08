@@ -288,9 +288,9 @@ Note: it is not possible to specify the `link` to use as this is how `mock-apoll
 
 Additionally, you can specify the following options which control the behaviour of the mock Apollo client:
 
-| Option                         | Description                                                                                         | Default                          |
-| ------------------------------ | --------------------------------------------------------------------------------------------------- | -------------------------------- |
-| `supressMissingHandlerWarning` | Controls whether a warning is logged when a request handler for an executed operation is not found. | `false` (Warning will be logged) |
+| Option                          | Description                                                                                         | Default                          |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `suppressMissingHandlerWarning` | Controls whether a warning is logged when a request handler for an executed operation is not found. | `false` (Warning will be logged) |
 
 ### Fragments
 

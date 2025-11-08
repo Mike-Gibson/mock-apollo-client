@@ -14,7 +14,7 @@ export type MockLinkOptions = {
    * is executed and there is no request handler defined for it.
    * @default false
    */
-  supressMissingHandlerWarning: boolean;
+  suppressMissingHandlerWarning: boolean;
 };
 
 export class MockLink extends ApolloLink {
@@ -25,7 +25,7 @@ export class MockLink extends ApolloLink {
     super();
 
     this.options = {
-      supressMissingHandlerWarning: false,
+      suppressMissingHandlerWarning: false,
       ...options,
     };
   }
@@ -82,7 +82,7 @@ export class MockLink extends ApolloLink {
       if (!handler) {
         const errorMessage = `Request handler not defined for query: ${print(operation.query)}`;
 
-        if (!this.options.supressMissingHandlerWarning) {
+        if (!this.options.suppressMissingHandlerWarning) {
           writeWarning(errorMessage);
         }
 
